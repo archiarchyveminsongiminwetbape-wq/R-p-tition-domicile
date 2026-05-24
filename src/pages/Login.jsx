@@ -1,0 +1,157 @@
+import { useState }      from 'react'
+import { useNavigate }   from 'react-router-dom'
+import { useAuth0 }      from '@auth0/auth0-react'
+import { AUTH0_CONFIG }  from '../auth/config'
+
+export default function Login() {
+  const nav = useNavigate()
+  const { loginWithRedirect } = useAuth0()
+  const [email,    setEmail]    = useState('')
+  const [password, setPassword] = useState('')
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState('')
+  const [showPw,   setShowPw]   = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      await loginWithRedirect({
+        authorizationParams: {
+          redirect_uri: AUTH0_CONFIG.callbackUrl,
+          login_hint:   email,
+          prompt:       'login',
+          connection:   'Username-Password-Authentication',
+        },
+        appState: { returnTo: '/app' },
+      })
+    } catch {
+      setError('Identifiants incorrects. Veuillez réessayer.')
+      setLoading(false)
+    }
+  }
+
+  async function loginGoogle() {
+    await loginWithRedirect({
+      authorizationParams: {
+        connection:   'google-oauth2',
+        redirect_uri: AUTH0_CONFIG.callbackUrl,
+      },
+      appState: { returnTo: '/app' },
+    })
+  }
+
+  const field = (label, val, set, type = 'text', placeholder = '') => (
+    <div>
+      <label style={{ fontSize:12,color:'#64748B',display:'block',marginBottom:5,fontWeight:500 }}>{label}</label>
+      <div style={{ position:'relative' }}>
+        <input type={type === 'password' ? (showPw ? 'text' : 'password') : type}
+          value={val} onChange={e => set(e.target.value)} placeholder={placeholder} required
+          style={{ width:'100%',padding:'11px 14px',border:'1px solid #E2E8F0',borderRadius:10,fontSize:14,outline:'none',boxSizing:'border-box' }}
+          onFocus={e => e.target.style.borderColor = '#1A56DB'}
+          onBlur={e  => e.target.style.borderColor = '#E2E8F0'} />
+        {type === 'password' && (
+          <button type="button" onClick={() => setShowPw(p => !p)}
+            style={{ position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',border:'none',background:'none',cursor:'pointer',color:'#94A3B8',fontSize:16 }}>
+            {showPw ? '🙈' : '👁'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{ minHeight:'100vh', display:'flex', background:'#F8FAFC' }}>
+      {/* Panel gauche décoratif */}
+      <div style={{ width:'42%', background:'#0F172A', display:'flex', flexDirection:'column', padding:'48px', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute',top:-80,right:-80,width:400,height:400,borderRadius:'50%',background:'radial-gradient(circle,rgba(59,130,246,.2) 0%,transparent 70%)' }} />
+        <div style={{ position:'absolute',bottom:-60,left:-60,width:350,height:350,borderRadius:'50%',background:'radial-gradient(circle,rgba(16,185,129,.12) 0%,transparent 70%)' }} />
+        <div onClick={() => nav('/')} style={{ display:'flex',alignItems:'center',gap:10,cursor:'pointer',marginBottom:'auto',position:'relative',zIndex:1 }}>
+          <div style={{ width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,#3B82F6,#1A56DB)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'serif',fontWeight:700,color:'#fff',fontSize:16 }}>R</div>
+          <span style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:18,color:'#fff' }}>Répétitions<span style={{color:'#60A5FA'}}> à Domicile</span></span>
+        </div>
+        <div style={{ position:'relative',zIndex:1 }}>
+          <h2 style={{ fontFamily:"'Playfair Display',serif",fontSize:34,color:'#fff',fontWeight:700,lineHeight:1.3,margin:'0 0 16px' }}>
+            Bon retour parmi nous 👋
+          </h2>
+          <p style={{ color:'#94A3B8',fontSize:15,lineHeight:1.7,marginBottom:36 }}>
+            Connectez-vous pour accéder à votre espace personnel et gérer vos cours particuliers.
+          </p>
+          {/* Témoignage */}
+          <div style={{ background:'rgba(255,255,255,.05)',border:'1px solid rgba(255,255,255,.1)',borderRadius:14,padding:20 }}>
+            <div style={{ color:'#F59E0B',fontSize:16,marginBottom:10 }}>★★★★★</div>
+            <p style={{ color:'#CBD5E1',fontSize:13,lineHeight:1.7,fontStyle:'italic',margin:'0 0 12px' }}>
+              "La plateforme m'a permis de trouver un professeur de maths excellent en moins de 24h. Mon fils a réussi son bac avec mention !"
+            </p>
+            <div style={{ display:'flex',alignItems:'center',gap:10 }}>
+              <div style={{ width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#059669,#10B981)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'#fff',fontSize:13 }}>MA</div>
+              <div>
+                <div style={{ fontSize:13,fontWeight:600,color:'#E2E8F0' }}>Mme Ateba</div>
+                <div style={{ fontSize:11,color:'#64748B' }}>Parent · Yaoundé</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Panel droit — formulaire */}
+      <div style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:'48px 40px' }}>
+        <div style={{ width:'100%',maxWidth:420 }}>
+          <h1 style={{ fontSize:26,fontWeight:700,fontFamily:"'Playfair Display',serif",margin:'0 0 6px' }}>Se connecter</h1>
+          <p style={{ color:'#64748B',marginBottom:32 }}>Accédez à votre espace {' '}
+            <span onClick={() => nav('/inscription')} style={{ color:'#1A56DB',fontWeight:600,cursor:'pointer' }}>ou créez un compte</span>
+          </p>
+
+          {/* Google */}
+          <button onClick={loginGoogle} style={{
+            width:'100%',padding:'11px 0',border:'1px solid #E2E8F0',borderRadius:10,
+            background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',
+            gap:10,fontSize:14,fontWeight:600,color:'#374151',cursor:'pointer',
+            marginBottom:20,fontFamily:"'DM Sans',sans-serif",
+          }}>
+            <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+            Continuer avec Google
+          </button>
+
+          <div style={{ display:'flex',alignItems:'center',gap:10,marginBottom:20 }}>
+            <div style={{ flex:1,height:1,background:'#E2E8F0' }} /><span style={{ fontSize:12,color:'#94A3B8' }}>ou</span><div style={{ flex:1,height:1,background:'#E2E8F0' }} />
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display:'flex',flexDirection:'column',gap:14 }}>
+            {field('Adresse email', email, setEmail, 'email', 'votre@email.com')}
+            {field('Mot de passe', password, setPassword, 'password', '••••••••')}
+
+            <div style={{ textAlign:'right' }}>
+              <span onClick={() => loginWithRedirect({ authorizationParams:{ redirect_uri: AUTH0_CONFIG.callbackUrl, screen_hint:'forgot-password' }})}
+                style={{ fontSize:12,color:'#1A56DB',fontWeight:600,cursor:'pointer' }}>
+                Mot de passe oublié ?
+              </span>
+            </div>
+
+            {error && (
+              <div style={{ background:'#FEF2F2',border:'1px solid #FCA5A5',borderRadius:8,padding:'10px 14px',fontSize:13,color:'#B91C1C' }}>
+                ⚠ {error}
+              </div>
+            )}
+
+            <button type="submit" disabled={loading} style={{
+              width:'100%',padding:'13px 0',
+              background: loading ? '#94A3B8' : '#1A56DB',
+              color:'#fff',border:'none',borderRadius:10,fontWeight:700,
+              fontSize:15,cursor: loading ? 'not-allowed' : 'pointer',
+              fontFamily:"'DM Sans',sans-serif",
+            }}>
+              {loading ? 'Connexion…' : 'Se connecter'}
+            </button>
+          </form>
+
+          <p style={{ textAlign:'center',fontSize:13,color:'#64748B',marginTop:24 }}>
+            Pas encore de compte ?{' '}
+            <span onClick={() => nav('/inscription')} style={{ color:'#1A56DB',fontWeight:600,cursor:'pointer' }}>S'inscrire gratuitement</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}

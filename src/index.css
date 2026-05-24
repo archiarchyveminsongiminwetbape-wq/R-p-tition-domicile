@@ -1,0 +1,65 @@
+/* ─── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; }
+
+body {
+  height: 100%;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #0F172A;
+  background: #F8FAFC;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { height: 100%; }
+
+/* ─── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* ─── Typography helpers ────────────────────────────────────── */
+.serif { font-family: 'Playfair Display', Georgia, serif; }
+
+/* ─── Focus ring ────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid #1A56DB;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Form elements base ────────────────────────────────────── */
+input, select, textarea {
+  font-family: inherit;
+  font-size: 13px;
+  border: 1px solid #E2E8F0;
+  border-radius: 7px;
+  padding: 8px 11px;
+  width: 100%;
+  outline: none;
+  transition: border-color .15s;
+  background: #fff;
+  color: #0F172A;
+}
+input:focus, select:focus, textarea:focus { border-color: #1A56DB; }
+input::placeholder { color: #94A3B8; }
+
+/* ─── Button reset ──────────────────────────────────────────── */
+button { cursor: pointer; font-family: inherit; border: none; }
+
+/* ─── Table base ────────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; }
+
+/* ─── Animations ────────────────────────────────────────────── */
+@keyframes fadeIn  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+
+.fade-in  { animation: fadeIn  .25s ease both; }
+.slide-in { animation: slideIn .2s ease both; }
+
+/* ─── Utility ───────────────────────────────────────────────── */
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
