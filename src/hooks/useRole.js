@@ -11,7 +11,12 @@ import { ROLE_CLAIM, MGMT_API_URL } from '../auth/config'
 export function useRole() {
   const { user } = useAuth0()
   if (!user) return null
-  return user[ROLE_CLAIM] ?? user.user_metadata?.role ?? null
+
+  const fallbackRole = typeof window !== 'undefined'
+    ? sessionStorage.getItem('pending_role')
+    : null
+
+  return user[ROLE_CLAIM] ?? user.user_metadata?.role ?? fallbackRole ?? null
 }
 
 /**
