@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  professeur
+  parent
+}
+
+enum StatutAnnonce {
+  active
+  inactive
+  suspendue
+}
+
+enum StatutSeance {
+  en_attente
+  confirmee
+  annulee
+  realisee
+}
+
+enum StatutPaiement {
+  en_attente
+  valide
+  rembourse
+  echoue
+}
+
+model Utilisateur {
+  idUtilisateur   Int      @id @default(autoincrement()) @map("id_utilisateur")
+  nom             String   @db.VarChar(100)
+  prenom          String   @db.VarChar(100)
+  email           String   @unique @db.VarChar(150)
+  motDePasse      String   @map("mot_de_passe") @db.VarChar(255)
+  telephone       String?  @db.VarChar(20)
+  adresse         String?
+  photo           String?  @db.VarChar(255)
+  role            Role
+  dateInscription DateTime @default(now()) @map("date_inscription")
+
+  professeur Professeur?
+  parent     Parent?
+
+  @@map("utilisateur")
+}
+
+model Professeur {
+  idProfesseur  Int      @id @default(autoincrement()) @map("id_professeur")
+  idUtilisateur Int      @unique @map("id_utilisateur")
+  cv            String?
+  tarifHoraire  Decimal  @default(0.00) @db.Decimal(8, 2) @map("tarif_horaire")
+  bio           String?
+  disponibilites String?
+  noteMoyenne   Decimal? @default(0.00) @db.Decimal(3, 2) @map("note_moyenne")
+
+  utilisateur Utilisateur @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
+  annonces    Annonce[]
+  enseignes   Enseigne[]
+  avis        Avis[]
+
+  @@index([noteMoyenne])
+  @@map("professeur")
+}
+
+model Parent {
+  idParent     Int @id @default(autoincrement()) @map("id_parent")
+  idUtilisateur Int @unique @map("id_utilisateur")
+
+  utilisateur Utilisateur @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
+  eleves     Eleve[]
+  seances    Seance[]
+  avis       Avis[]
+
+  @@map("parent")
+}
+
+model Matiere {
+  idMatiere   Int        @id @default(autoincrement()) @map("id_matiere")
+  nom         String     @unique @db.VarChar(100)
+  description String?
+
+  enseignes Enseigne[]
+  annonces  Annonce[]
+
+  @@map("matiere")
+}
+
+model Niveau {
+  idNiveau   Int    @id @default(autoincrement()) @map("id_niveau")
+  nom        String @unique @db.VarChar(100)
+  description String?
+
+  eleves      Eleve[]
+  annonces    AnnonceNiveau[]
+
+  @@map("niveau")
+}
+
+model Eleve {
+  idEleve       Int       @id @default(autoincrement()) @map("id_eleve")
+  nom           String    @db.VarChar(100)
+  prenom        String    @db.VarChar(100)
+  dateNaissance DateTime? @db.Date @map("date_naissance")
+  ecole         String?   @db.VarChar(200)
+  idParent      Int       @map("id_parent")
+  idNiveau      Int       @map("id_niveau")
+
+  parent Parent @relation(fields: [idParent], references: [idParent], onDelete: Cascade)
+  niveau Niveau @relation(fields: [idNiveau], references: [idNiveau], onDelete: Restrict)
+  seances Seance[]
+
+  @@index([idParent])
+  @@map("eleve")
+}
+
+model Enseigne {
+  idProfesseur Int @map("id_professeur")
+  idMatiere    Int @map("id_matiere")
+
+  professeur Professeur @relation(fields: [idProfesseur], references: [idProfesseur], onDelete: Cascade)
+  matiere    Matiere    @relation(fields: [idMatiere], references: [idMatiere], onDelete: Cascade)
+
+  @@id([idProfesseur, idMatiere])
+  @@map("enseigne")
+}
+
+model Annonce {
+  idAnnonce    Int            @id @default(autoincrement()) @map("id_annonce")
+  titre        String         @db.VarChar(200)
+  description  String?
+  tarif        Decimal        @default(0.00) @db.Decimal(8, 2)
+  statut       StatutAnnonce  @default(active)
+  dateCreation DateTime       @default(now()) @map("date_creation")
+  idProfesseur Int            @map("id_professeur")
+  idMatiere    Int            @map("id_matiere")
+
+  professeur Professeur @relation(fields: [idProfesseur], references: [idProfesseur], onDelete: Cascade)
+  matiere    Matiere    @relation(fields: [idMatiere], references: [idMatiere], onDelete: Restrict)
+  niveaux    AnnonceNiveau[]
+  seances    Seance[]
+
+  @@index([statut])
+  @@index([tarif])
+  @@map("annonce")
+}
+
+model AnnonceNiveau {
+  idAnnonce Int @map("id_annonce")
+  idNiveau  Int @map("id_niveau")
+
+  annonce Annonce @relation(fields: [idAnnonce], references: [idAnnonce], onDelete: Cascade)
+  niveau  Niveau  @relation(fields: [idNiveau], references: [idNiveau], onDelete: Cascade)
+
+  @@id([idAnnonce, idNiveau])
+  @@map("annonce_niveau")
+}
+
+model Seance {
+  idSeance    Int          @id @default(autoincrement()) @map("id_seance")
+  dateSeance  DateTime     @db.Date @map("date_seance")
+  heureDebut  DateTime     @db.Time(0) @map("heure_debut")
+  heureFin    DateTime     @db.Time(0) @map("heure_fin")
+  statut      StatutSeance @default(en_attente)
+  adresse     String?
+  idAnnonce   Int          @map("id_annonce")
+  idParent    Int          @map("id_parent")
+  idEleve     Int          @map("id_eleve")
+
+  annonce Annonce @relation(fields: [idAnnonce], references: [idAnnonce], onDelete: Restrict)
+  parent  Parent  @relation(fields: [idParent], references: [idParent], onDelete: Restrict)
+  eleve   Eleve   @relation(fields: [idEleve], references: [idEleve], onDelete: Restrict)
+  paiement Paiement?
+
+  @@index([dateSeance])
+  @@index([statut])
+  @@map("seance")
+}
+
+model Paiement {
+  idPaiement   Int           @id @default(autoincrement()) @map("id_paiement")
+  montant      Decimal       @db.Decimal(10, 2)
+  datePaiement DateTime      @default(now()) @map("date_paiement")
+  statut       StatutPaiement @default(en_attente)
+  modePaiement String?       @map("mode_paiement")
+  reference    String?       @db.VarChar(100)
+  idSeance     Int           @unique @map("id_seance")
+
+  seance Seance @relation(fields: [idSeance], references: [idSeance], onDelete: Restrict)
+
+  @@index([statut])
+  @@map("paiement")
+}
+
+model Avis {
+  idAvis       Int      @id @default(autoincrement()) @map("id_avis")
+  note         Int      @db.SmallInt
+  commentaire  String?
+  dateAvis     DateTime @default(now()) @map("date_avis")
+  idParent     Int      @map("id_parent")
+  idProfesseur Int      @map("id_professeur")
+
+  parent     Parent     @relation(fields: [idParent], references: [idParent], onDelete: Cascade)
+  professeur Professeur @relation(fields: [idProfesseur], references: [idProfesseur], onDelete: Cascade)
+
+  @@unique([idParent, idProfesseur])
+  @@map("avis")
+}
