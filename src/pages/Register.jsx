@@ -2,6 +2,7 @@ import { useState }      from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth0 }       from '@auth0/auth0-react'
 import { AUTH0_CONFIG, DB_CONNECTION, SIGNUP_URL } from '../auth/config'
+import { useResponsive } from '../hooks/useResponsive'
 
 function Logo({ onClick }) {
   return (
@@ -21,6 +22,7 @@ export default function Register() {
   const nav      = useNavigate()
   const location = useLocation()
   const { loginWithRedirect } = useAuth0()
+  const { isMobile } = useResponsive()
 
   const preselected = location.state?.role ?? null
   const [step,     setStep]     = useState(preselected ? 2 : 1)
@@ -115,61 +117,63 @@ export default function Register() {
   )
 
   return (
-    <div style={{ minHeight:'100vh', display:'flex', background:'#F8FAFC' }}>
+    <div style={{ minHeight:'100vh', display:'flex', background:'#F8FAFC', flexDirection: isMobile ? 'column' : 'row' }}>
       {/* Panel gauche */}
-      <div style={{ width:'44%', background:'#0F172A', display:'flex', flexDirection:'column', padding:'48px', position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute', top:-60, right:-60, width:300, height:300, borderRadius:'50%', background:'radial-gradient(circle,rgba(59,130,246,.2) 0%,transparent 70%)' }} />
-        <div style={{ position:'absolute', bottom:-40, left:-40, width:250, height:250, borderRadius:'50%', background:'radial-gradient(circle,rgba(124,58,237,.15) 0%,transparent 70%)' }} />
-        <div onClick={() => nav('/')} style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer', marginBottom:'auto', position:'relative', zIndex:1 }}>
+      <div style={{ width: isMobile ? '100%' : '44%', background:'#0F172A', display:'flex', flexDirection:'column', padding: isMobile ? '28px 18px 24px' : '48px', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute', top: isMobile ? -40 : -60, right: isMobile ? -40 : -60, width: isMobile ? 200 : 300, height: isMobile ? 200 : 300, borderRadius:'50%', background:'radial-gradient(circle,rgba(59,130,246,.2) 0%,transparent 70%)' }} />
+        <div style={{ position:'absolute', bottom: isMobile ? -30 : -40, left: isMobile ? -30 : -40, width: isMobile ? 180 : 250, height: isMobile ? 180 : 250, borderRadius:'50%', background:'radial-gradient(circle,rgba(124,58,237,.15) 0%,transparent 70%)' }} />
+        <div onClick={() => nav('/')} style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer', marginBottom: isMobile ? 22 : 'auto', position:'relative', zIndex:1 }}>
           <div style={{ width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,#3B82F6,#1A56DB)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'serif',fontWeight:700,color:'#fff',fontSize:16 }}>R</div>
           <span style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:18,color:'#fff' }}>Répétitions<span style={{color:'#60A5FA'}}> à Domicile</span></span>
         </div>
-        <div style={{ position:'relative', zIndex:1 }}>
-          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:34, color:'#fff', fontWeight:700, lineHeight:1.3, margin:'0 0 16px' }}>
-            {role === 'professeur' ? 'Développez votre activité' : role === 'parent' ? 'Le meilleur suivi pour votre enfant' : 'Rejoignez notre plateforme'}
-          </h2>
-          <p style={{ color:'#94A3B8', fontSize:15, lineHeight:1.7 }}>
-            {role === 'professeur'
-              ? 'Publiez vos annonces, gérez vos séances et recevez vos paiements en toute simplicité.'
-              : role === 'parent'
-              ? 'Trouvez le professeur idéal, réservez en ligne et suivez les progrès de votre enfant.'
-              : 'Connectez-vous à des centaines de professeurs qualifiés ou partagez vos compétences.'}
-          </p>
-          <div style={{ marginTop:36, display:'flex', flexDirection:'column', gap:14 }}>
-            {['✓ Inscription 100% gratuite','✓ Paiement sécurisé Mobile Money','✓ Professeurs vérifiés','✓ Réservation en ligne 24h/24'].map(f => (
-              <div key={f} style={{ display:'flex', alignItems:'center', gap:10, color:'#94A3B8', fontSize:14 }}>
-                <span style={{ color:'#60A5FA' }}>{f.slice(0,1)}</span>{f.slice(2)}
-              </div>
-            ))}
+        {!isMobile && (
+          <div style={{ position:'relative', zIndex:1 }}>
+            <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:34, color:'#fff', fontWeight:700, lineHeight:1.3, margin:'0 0 16px' }}>
+              {role === 'professeur' ? 'Développez votre activité' : role === 'parent' ? 'Le meilleur suivi pour votre enfant' : 'Rejoignez notre plateforme'}
+            </h2>
+            <p style={{ color:'#94A3B8', fontSize:15, lineHeight:1.7 }}>
+              {role === 'professeur'
+                ? 'Publiez vos annonces, gérez vos séances et recevez vos paiements en toute simplicité.'
+                : role === 'parent'
+                ? 'Trouvez le professeur idéal, réservez en ligne et suivez les progrès de votre enfant.'
+                : 'Connectez-vous à des centaines de professeurs qualifiés ou partagez vos compétences.'}
+            </p>
+            <div style={{ marginTop:36, display:'flex', flexDirection:'column', gap:14 }}>
+              {['✓ Inscription 100% gratuite','✓ Paiement sécurisé Mobile Money','✓ Professeurs vérifiés','✓ Réservation en ligne 24h/24'].map(f => (
+                <div key={f} style={{ display:'flex', alignItems:'center', gap:10, color:'#94A3B8', fontSize:14 }}>
+                  <span style={{ color:'#60A5FA' }}>{f.slice(0,1)}</span>{f.slice(2)}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Panel droit */}
-      <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 40px', overflowY:'auto' }}>
-        <div style={{ width:'100%', maxWidth:460 }}>
+      <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding: isMobile ? '24px 16px 28px' : '48px 40px', overflowY:'auto' }}>
+        <div style={{ width:'100%', maxWidth: isMobile ? '100%' : 460 }}>
           {/* Étape 1 : choix du rôle */}
           {step === 1 && (
             <>
-              <h1 style={{ fontSize:26, fontWeight:700, fontFamily:"'Playfair Display',serif", margin:'0 0 6px' }}>Créer un compte</h1>
-              <p style={{ color:'#64748B', marginBottom:32 }}>Vous êtes…</p>
+              <h1 style={{ fontSize: isMobile ? 22 : 26, fontWeight:700, fontFamily:"'Playfair Display',serif", margin:'0 0 6px' }}>Créer un compte</h1>
+              <p style={{ color:'#64748B', marginBottom: isMobile ? 24 : 32 }}>Vous êtes…</p>
               <div style={{ display:'flex', flexDirection:'column', gap:14, marginBottom:32 }}>
                 {ROLES.map(r => (
                   <button key={r.id} onClick={() => { setRole(r.id); setStep(2) }}
                     style={{
-                      padding:'22px 20px', border:`2px solid ${r.border}`,
+                      padding: isMobile ? '18px 16px' : '22px 20px', border:`2px solid ${r.border}`,
                       background: r.bg, borderRadius:14, cursor:'pointer',
-                      display:'flex', alignItems:'center', gap:16, textAlign:'left',
+                      display:'flex', alignItems:'center', gap: isMobile ? 12 : 16, textAlign:'left',
                       transition:'all .15s', fontFamily:"'DM Sans',sans-serif",
                     }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = r.color}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = r.border}>
-                    <span style={{ fontSize:32 }}>{r.icon}</span>
+                    onMouseEnter={e => !isMobile && (e.currentTarget.style.borderColor = r.color)}
+                    onMouseLeave={e => !isMobile && (e.currentTarget.style.borderColor = r.border)}>
+                    <span style={{ fontSize: isMobile ? 28 : 32 }}>{r.icon}</span>
                     <div>
-                      <div style={{ fontWeight:700, fontSize:15, color:'#0F172A' }}>{r.title}</div>
-                      <div style={{ fontSize:13, color:'#64748B', marginTop:2 }}>{r.desc}</div>
+                      <div style={{ fontWeight:700, fontSize: isMobile ? 14 : 15, color:'#0F172A' }}>{r.title}</div>
+                      <div style={{ fontSize: isMobile ? 12 : 13, color:'#64748B', marginTop:2 }}>{r.desc}</div>
                     </div>
-                    <span style={{ marginLeft:'auto', color:r.color, fontSize:18 }}>→</span>
+                    <span style={{ marginLeft:'auto', color:r.color, fontSize: isMobile ? 16 : 18 }}>→</span>
                   </button>
                 ))}
               </div>
@@ -183,12 +187,12 @@ export default function Register() {
           {/* Étape 2 : formulaire */}
           {step === 2 && (
             <>
-              <button onClick={() => setStep(1)} style={{ border:'none', background:'none', color:'#1A56DB', fontSize:13, fontWeight:600, cursor:'pointer', padding:0, marginBottom:24 }}>← Changer de rôle</button>
-              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:28 }}>
-                <span style={{ fontSize:28 }}>{ROLES.find(r => r.id === role)?.icon}</span>
+              <button onClick={() => setStep(1)} style={{ border:'none', background:'none', color:'#1A56DB', fontSize:13, fontWeight:600, cursor:'pointer', padding:0, marginBottom: isMobile ? 20 : 24 }}>← Changer de rôle</button>
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom: isMobile ? 24 : 28 }}>
+                <span style={{ fontSize: isMobile ? 24 : 28 }}>{ROLES.find(r => r.id === role)?.icon}</span>
                 <div>
-                  <h1 style={{ fontSize:22, fontWeight:700, fontFamily:"'Playfair Display',serif", margin:0 }}>Créer mon compte</h1>
-                  <p style={{ color:'#64748B', fontSize:13, margin:0 }}>{ROLES.find(r => r.id === role)?.title}</p>
+                  <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight:700, fontFamily:"'Playfair Display',serif", margin:0 }}>Créer mon compte</h1>
+                  <p style={{ color:'#64748B', fontSize: isMobile ? 12 : 13, margin:0 }}>{ROLES.find(r => r.id === role)?.title}</p>
                 </div>
               </div>
 
@@ -209,8 +213,8 @@ export default function Register() {
                 <div style={{ flex:1, height:1, background:'#E2E8F0' }} />
               </div>
 
-              <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:14 }}>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap: isMobile ? 12 : 14 }}>
+                <div style={{ display: isMobile ? 'flex' : 'grid', gridTemplateColumns:'1fr 1fr', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 12 : 12 }}>
                   {input('Prénom *', prenom, setPrenom, { placeholder:'Jean' })}
                   {input('Nom *',    nom,    setNom,    { placeholder:'Dupont' })}
                 </div>

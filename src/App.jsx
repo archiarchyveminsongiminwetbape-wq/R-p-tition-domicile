@@ -46,7 +46,6 @@ function AppLayout() {
   const [profs, setProfs] = useState(PROFS_INIT)
   const [seances, setSeances] = useState(SEANCES_INIT)
   const [eleves, setEleves] = useState(ELEVES_INIT)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const navItems = role === 'professeur' ? NAV_PROF : NAV_PARENT
@@ -144,61 +143,9 @@ function AppLayout() {
   const currentLabel = navItems.find(item => item.id === page)?.label ?? 'Tableau de bord'
 
   return (
-    <div style={isMobile ? { display: 'flex', flexDirection: 'column', minHeight: '100vh' } : { display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      {isMobile ? (
-        <>
-          <div style={{ position: 'sticky', top: 0, zIndex: 20, background: '#0F172A', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px' }}>
-              <div>
-                <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: 16, color: '#fff' }}>
-                  Répétitions <span style={{ color: '#60A5FA' }}>à Domicile</span>
-                </div>
-                <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{currentLabel}</div>
-              </div>
-              <button
-                onClick={() => setMobileMenuOpen(open => !open)}
-                aria-label="Ouvrir le menu"
-                style={{ borderRadius: 10, border: '1px solid rgba(255,255,255,.12)', background: 'rgba(255,255,255,.04)', color: '#fff', padding: '8px 12px', fontSize: 18 }}
-              >
-                ☰
-              </button>
-            </div>
-          </div>
-          {mobileMenuOpen && (
-            <div style={{ background: '#0F172A', padding: '8px 12px 14px' }}>
-              {navItems.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setPage(item.id)
-                    setMobileMenuOpen(false)
-                  }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '11px 12px',
-                    borderRadius: 10,
-                    marginBottom: 6,
-                    textAlign: 'left',
-                    border: 'none',
-                    background: page === item.id ? 'rgba(26,86,219,.32)' : 'transparent',
-                    color: page === item.id ? '#93C5FD' : '#E2E8F0',
-                    fontWeight: page === item.id ? 700 : 500,
-                  }}
-                >
-                  <span>{item.icon}</span>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        <Sidebar page={page} setPage={setPage} />
-      )}
-      <main style={isMobile ? { flex: 1, padding: '18px 16px 28px', background: '#F8FAFC' } : { flex: 1, overflowY: 'auto', padding: '28px 32px', background: '#F8FAFC' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      <Sidebar page={page} setPage={setPage} />
+      <main style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '18px 16px 28px 16px' : '28px 32px', background: '#F8FAFC', marginTop: isMobile ? '60px' : 0 }}>
         {renderPage()}
       </main>
     </div>
