@@ -1,4 +1,3 @@
-import { useAuth0 } from '@auth0/auth0-react'
 import { Navigate } from 'react-router-dom'
 import { useRole } from '../hooks/useRole'
 
@@ -27,12 +26,12 @@ function Spinner() {
  * - Si rôle requis ne correspond pas → redirige vers /app
  */
 export default function ProtectedRoute({ children, requiredRole }) {
-  const { isAuthenticated, isLoading } = useAuth0()
-  const role = useRole()
+  const token = localStorage.getItem('token')
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const role = user.role || useRole()
 
-  if (isLoading) return <Spinner />
-  if (!isAuthenticated) return <Navigate to="/connexion" replace />
-  if (!role)            return <Navigate to="/choisir-role" replace />
+  if (!token) return <Navigate to="/connexion" replace />
+  if (!role) return <Navigate to="/choisir-role" replace />
   if (requiredRole && role !== requiredRole) return <Navigate to="/app" replace />
 
   return children

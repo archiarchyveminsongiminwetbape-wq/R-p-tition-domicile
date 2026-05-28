@@ -1,8 +1,6 @@
-import { useState }          from 'react'
-import { useNavigate }        from 'react-router-dom'
-import { useAuth0 }           from '@auth0/auth0-react'
-import { setUserRole }        from '../hooks/useRole'
-import { AUTH0_CONFIG, MGMT_API_URL } from '../auth/config'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { setUserRole } from '../hooks/useRole'
 
 const ROLES = [
   { id:'parent',     icon:'👨‍👩‍👧', title:'Je suis un parent',    desc:'Je recherche des professeurs pour mes enfants.',   color:'#059669', bg:'#F0FDF4', border:'#BBF7D0' },
@@ -10,7 +8,7 @@ const ROLES = [
 ]
 
 export default function RoleSelection() {
-  const { user, getAccessTokenSilently, logout } = useAuth0()
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
   const nav     = useNavigate()
   const [sel,   setSel]   = useState('')
   const [loading, setLoading] = useState(false)
@@ -21,25 +19,20 @@ export default function RoleSelection() {
     setLoading(true)
     setError('')
     try {
-      // Obtenir un token avec accès Management API
-      const token = await getAccessTokenSilently({
-        authorizationParams: {
-          audience: AUTH0_CONFIG.audience,
-          scope: 'update:current_user_metadata openid profile email',
-        },
-      })
-      await setUserRole(token, user.sub, sel)
-      // Forcer le rechargement du token pour avoir le nouveau rôle
-      await getAccessTokenSilently({ cacheMode: 'off' })
+      setUserRole(sel)
       nav('/app')
     } catch (err) {
       console.error(err)
-      // Fallback : on stocke en sessionStorage et on continue
-      sessionStorage.setItem('pending_role', sel)
-      nav('/app')
+      setError('Erreur lors de la sélection du rôle')
     } finally {
       setLoading(false)
     }
+  }
+
+  const logout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    nav('/connexion')
   }
 
   return (
@@ -48,7 +41,7 @@ export default function RoleSelection() {
         {/* Header */}
         <div style={{ textAlign:'center', marginBottom:40 }}>
           <div style={{ width:64,height:64,borderRadius:20,background:'linear-gradient(135deg,#3B82F6,#1A56DB)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'serif',fontWeight:700,color:'#fff',fontSize:28,margin:'0 auto 16px' }}>R</div>
-          <h1 style={{ fontSize:26,fontWeight:700,fontFamily:"'Playfair Display',serif",margin:'0 0 8px' }}>Bienvenue, {user?.given_name ?? user?.name?.split(' ')[0]} !</h1>
+          <h1 style={{ fontSize:26,fontWeight:700,fontFamily:"'Playfair Display',serif",margin:'0 0 8px' }}>Bienvenue, {user?.prenom || user?.email?.split('@')[0] || 'Utilisateur'} !</h1>
           <p style={{ color:'#64748B',fontSize:15 }}>Avant de continuer, dites-nous qui vous êtes.</p>
         </div>
 
@@ -63,7 +56,7 @@ export default function RoleSelection() {
                 background: sel === r.id ? r.bg : '#fff',
                 borderRadius:14, cursor:'pointer',
                 display:'flex', alignItems:'center', gap:16, textAlign:'left',
-                transition:'all .15s', fontFamily:"'DM Sans',sans-serif",
+                transition:'all .15s', fontFamily:"'DM Sans",sans-serif",
                 boxShadow: sel === r.id ? `0 4px 12px ${r.color}22` : 'none',
               }}>
               <span style={{ fontSize:32 }}>{r.icon}</span>
@@ -94,12 +87,12 @@ export default function RoleSelection() {
           background: (!sel || loading) ? '#94A3B8' : '#1A56DB',
           color:'#fff',border:'none',borderRadius:10,fontWeight:700,
           fontSize:15,cursor: (!sel || loading) ? 'not-allowed' : 'pointer',
-          fontFamily:"'DM Sans',sans-serif",
+          fontFamily:"'DM Sans",sans-serif",
         }}>
           {loading ? 'Enregistrement…' : 'Confirmer et accéder à mon espace →'}
         </button>
 
-        <button onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+        <button onClick={logout}
           style={{ width:'100%',marginTop:12,padding:'10px 0',background:'none',border:'none',color:'#94A3B8',fontSize:13,cursor:'pointer' }}>
           Se déconnecter
         </button>

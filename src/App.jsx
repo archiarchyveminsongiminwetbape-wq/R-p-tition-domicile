@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth0 } from '@auth0/auth0-react'
 
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import Callback from './pages/Callback'
 import RoleSelection from './pages/RoleSelection'
 import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
@@ -153,7 +151,14 @@ function AppLayout() {
 }
 
 export default function App() {
-  const { isLoading } = useAuth0()
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // Vérifier si l'utilisateur est déjà connecté
+    const token = localStorage.getItem('token')
+    const user = localStorage.getItem('user')
+    setIsLoading(false)
+  }, [])
 
   if (isLoading) {
     return (
@@ -169,7 +174,6 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/connexion" element={<Login />} />
       <Route path="/inscription" element={<Register />} />
-      <Route path="/callback" element={<Callback />} />
       <Route path="/choisir-role" element={<RoleSelection />} />
       <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />

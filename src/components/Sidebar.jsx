@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useAuth0 }   from '@auth0/auth0-react'
 import { useNavigate } from 'react-router-dom'
 import { useRole }     from '../hooks/useRole'
 import { useResponsive } from '../hooks/useResponsive'
@@ -22,15 +21,21 @@ const NAV_PARENT = [
 ]
 
 export default function Sidebar({ page, setPage }) {
-  const { user, logout } = useAuth0()
-  const role = useRole()
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const role = user.role || useRole()
   const nav  = useNavigate()
   const { isMobile } = useResponsive()
   const [isOpen, setIsOpen] = useState(false)
 
   const navItems = role === 'professeur' ? NAV_PROF : NAV_PARENT
+  const logout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    nav('/connexion')
+  }
+
   const initials = user
-    ? ((user.given_name?.[0] ?? '') + (user.family_name?.[0] ?? '')).toUpperCase() || user.name?.slice(0,2).toUpperCase() || '?'
+    ? ((user.prenom?.[0] ?? '') + (user.nom?.[0] ?? '')).toUpperCase() || user.email?.slice(0,2).toUpperCase() || '?'
     : '?'
 
   return (
@@ -77,7 +82,7 @@ export default function Sidebar({ page, setPage }) {
           </nav>
 
           <div style={{ padding:'8px 8px 2px', borderTop:'1px solid rgba(255,255,255,.06)' }}>
-            <button onClick={() => logout({ logoutParams:{ returnTo:window.location.origin }})}
+            <button onClick={() => logout()}
               style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'12px', border:'none', borderRadius:8, cursor:'pointer', background:'transparent', color:'#64748B', fontSize:14, fontFamily:"'DM Sans',sans-serif" }}>
               <span>🚪</span> Se déconnecter
             </button>
@@ -124,7 +129,7 @@ export default function Sidebar({ page, setPage }) {
       </nav>
 
       <div style={{ padding:'8px 8px 2px', borderTop:'1px solid rgba(255,255,255,.06)' }}>
-        <button onClick={() => logout({ logoutParams:{ returnTo:window.location.origin }})}
+        <button onClick={() => logout()}
           style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'9px 12px', border:'none', borderRadius:8, cursor:'pointer', background:'transparent', color:'#64748B', fontSize:13, fontFamily:"'DM Sans',sans-serif" }}
           onMouseEnter={e => { e.currentTarget.style.background='rgba(239,68,68,.1)'; e.currentTarget.style.color='#FCA5A5' }}
           onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='#64748B' }}>
@@ -138,7 +143,7 @@ export default function Sidebar({ page, setPage }) {
             ? <img src={user.picture} alt="" style={{ width:36,height:36,borderRadius:'50%',objectFit:'cover' }} />
             : <Avatar initials={initials} size={36} color='#1A56DB' />}
           <div style={{ minWidth:0 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:'#E2E8F0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user?.name ?? 'Utilisateur'}</div>
+            <div style={{ fontSize:12, fontWeight:600, color:'#E2E8F0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user?.prenom ? `${user.prenom} ${user.nom}` : user?.email || 'Utilisateur'}</div>
             <div style={{ fontSize:10, color:'#475569', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user?.email}</div>
           </div>
         </div>
