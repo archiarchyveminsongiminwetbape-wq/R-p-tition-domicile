@@ -46,31 +46,30 @@ export default function Register() {
 
     setLoading(true)
     try {
-      const res = await fetch(SIGNUP_URL, {
+      // Utiliser le backend local pour l'inscription
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_id:     AUTH0_CONFIG.clientId,
           email,
+          nom,
+          prenom,
           password,
-          connection:    DB_CONNECTION,
-          given_name:    prenom,
-          family_name:   nom,
-          user_metadata: { role, prenom, nom },
+          role
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.description ?? data.message ?? "Erreur lors de l'inscription.")
+      if (!res.ok) throw new Error(data.error || data.message || "Erreur lors de l'inscription.")
 
-      // Connexion automatique après inscription réussie
-      await loginWithRedirect({
-        authorizationParams: {
-          redirect_uri:   AUTH0_CONFIG.callbackUrl,
-          login_hint:     email,
-          prompt:         'login',
-        },
-        appState: { returnTo: '/app' },
-      })
+      // Stocker le token et les infos utilisateur
+      if (data.token) {
+        localStorage.setItem('token', data.token)
+        localStorage.setItem('user', JSON.stringify(data.user))
+      }
+
+      // Redirection vers l'application
+      nav('/app')
     } catch (err) {
       setError(err.message)
       setLoading(false)

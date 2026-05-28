@@ -5,7 +5,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "cd server && npm start",
+    "server:dev": "cd server && npm run dev",
+    "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
+    "build:prod": "vite build && move dist ..\\frontend-dist",
+    "start:prod": "cd server && npm start",
+    "vercel-build": "vite build"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.2.4",

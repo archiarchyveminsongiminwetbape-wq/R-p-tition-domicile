@@ -6,10 +6,24 @@ Plateforme full-stack de mise en relation entre **professeurs** et **parents** p
 
 ## 🚀 Démarrage rapide
 
+### Frontend
 ```bash
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # production → /dist
+```
+
+### Backend API
+```bash
+cd server
+npm install
+cp .env.example .env  # Configurer la base de données
+npm start             # http://localhost:3000/api
+```
+
+### Lancer les deux simultanément
+```bash
+npm run dev:all       # Frontend + Backend
 ```
 
 ---
@@ -19,19 +33,35 @@ npm run build      # production → /dist
 ```
 repetitions-domicile/
 ├── .env                        ← variables Auth0 (ne pas commiter)
+├── .env.local                  ← URL API backend
 ├── AUTH0_SETUP.md              ← guide de configuration Auth0
 ├── index.html
 ├── package.json
 ├── vite.config.js
+├── repetitions_domicile.sql    ← schéma base de données
 ├── public/favicon.svg
+├── server/                     ← Backend API
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── database.js     ← connexion MySQL
+│   │   ├── models/             ← Models (Professeur, Seance, Eleve, Annonce)
+│   │   ├── controllers/        ├── Contrôleurs API
+│   │   ├── routes/             ← Routes Express
+│   │   └── server.js          ← Point d'entrée
+│   ├── package.json
+│   └── .env.example           ← Configuration serveur
 └── src/
     ├── main.jsx                ← Auth0Provider + BrowserRouter
     ├── App.jsx                 ← Routes protégées
     ├── index.css               ← styles globaux
+    ├── services/
+    │   └── api.js              ← Client API
     ├── auth/
     │   └── config.js           ← constantes Auth0
     ├── hooks/
-    │   └── useRole.js          ← lecture du rôle depuis le token
+    │   ├── useRole.js          ← lecture du rôle depuis le token
+    │   ├── useResponsive.js    ← détection mobile/tablette
+    │   └── useApi.js           ← hook API custom
     ├── data/
     │   └── constants.js        ← données démo + référentiel
     ├── components/
@@ -83,10 +113,20 @@ repetitions-domicile/
 
 ## 🛠️ Stack
 
-- **Frontend** : React 18 + Vite 5
-- **Auth** : Auth0 (@auth0/auth0-react)
+### Frontend
+- **Framework** : React 18 + Vite 5
+- **Authentification** : Auth0 (@auth0/auth0-react)
 - **Routing** : React Router v6
-- **Base de données** : MySQL 8 (voir `repetitions_domicile.sql`)
+- **HTTP Client** : Fetch API
+
+### Backend
+- **Runtime** : Node.js
+- **Framework** : Express.js
+- **Base de données** : MySQL 8
+- **ORM** : mysql2 (promises)
+
+### Base de données
+- **MySQL 8** (voir `repetitions_domicile.sql`)
 
 ---
 

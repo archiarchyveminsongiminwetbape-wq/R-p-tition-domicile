@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  auth0Id   String?  @unique
+  email     String   @unique
+  nom       String
+  prenom    String
+  password  String?
+  role      String   @default("parent")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eleves    Eleve[]
+}
+
+model Professeur {
+  id        String   @id @default(uuid())
+  nom       String
+  prenom    String
+  email     String   @unique
+  password  String?
+  tarif     Float
+  note      Float    @default(0)
+  avis      Int      @default(0)
+  ville     String
+  photo     String?
+  matieres  String[]
+  niveaux   String[]
+  bio       String?
+  dispo     String?
+  valide    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  annonces  Annonce[]
+  seances   Seance[]
+}
+
+model Eleve {
+  id        String   @id @default(uuid())
+  nom       String
+  prenom    String
+  niveau    String
+  ecole     String?
+  parentId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent    User     @relation(fields: [parentId], references: [id])
+  seances   Seance[]
+}
+
+model Annonce {
+  id        String   @id @default(uuid())
+  profId    String
+  titre     String
+  matiere   String
+  niveaux   String[]
+  tarif     Float
+  statut    String   @default("active")
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  professeur Professeur @relation(fields: [profId], references: [id])
+}
+
+model Seance {
+  id        String   @id @default(uuid())
+  profId    String
+  eleveId   String
+  matiere   String
+  niveau    String
+  date      DateTime
+  heure     String
+  duree     Int
+  montant   Float
+  statut    String   @default("en_attente")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  professeur Professeur @relation(fields: [profId], references: [id])
+  eleve     Eleve     @relation(fields: [eleveId], references: [id])
+}

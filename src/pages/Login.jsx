@@ -19,16 +19,28 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await loginWithRedirect({
-        authorizationParams: {
-          redirect_uri: AUTH0_CONFIG.callbackUrl,
-          login_hint: email,
-          prompt: 'login',
-          connection: 'Username-Password-Authentication',
-        },
-        appState: { returnTo: '/app' },
+      // Utiliser le backend local pour la connexion
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password
+        }),
       })
-    } catch {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || data.message || 'Identifiants incorrects.')
+
+      // Stocker le token et les infos utilisateur
+      if (data.token) {
+        localStorage.setItem('token', data.token)
+        localStorage.setItem('user', JSON.stringify(data.user))
+      }
+
+      // Redirection vers l'application
+      nav('/app')
+    } catch (err) {
       setError('Identifiants incorrects. Veuillez réessayer.')
       setLoading(false)
     }

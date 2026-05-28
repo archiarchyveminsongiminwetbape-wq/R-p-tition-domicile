@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 
@@ -20,6 +20,7 @@ import Profil from './pages/Profil'
 import { useRole } from './hooks/useRole'
 import { useResponsive } from './hooks/useResponsive'
 import { PROFS_INIT, SEANCES_INIT, ELEVES_INIT } from './data/constants'
+import api from './services/api'
 
 const NAV_PROF = [
   { id: 'dashboard', icon: '⊞', label: 'Tableau de bord' },
@@ -42,28 +43,73 @@ function AppLayout() {
   const role = useRole()
   const { isMobile } = useResponsive()
   const [page, setPage] = useState('dashboard')
-  const [profs] = useState(PROFS_INIT)
+  const [profs, setProfs] = useState(PROFS_INIT)
   const [seances, setSeances] = useState(SEANCES_INIT)
   const [eleves, setEleves] = useState(ELEVES_INIT)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const navItems = role === 'professeur' ? NAV_PROF : NAV_PARENT
 
-  function handleReservSuccess({ prof, date, heure, duree, eleve, montant }) {
+  // Charger les données depuis l'API au démarrage
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [profsData, seancesData, elevesData] = await Promise.all([
+          api.getProfesseurs(),
+          api.getSeances(),
+          api.getEleves()
+        ])
+        setProfs(profsData)
+        setSeances(seancesData)
+        setEleves(elevesData)
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error)
+        // Garder les données mock en cas d'erreur
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [])
+
+  async function handleReservSuccess({ prof, date, heure, duree, eleve, montant }) {
     const end = addHours(heure, duree)
-    setSeances(prev => [{
-      id: Date.now(),
-      profId: prof.id,
-      prof: `${prof.prenom} ${prof.nom}`,
-      matière: prof.matières[0],
-      niveau: prof.niveaux[0],
-      date,
-      heure: `${heure}–${end}`,
-      statut: 'en_attente',
-      eleve,
-      montant,
-    }, ...prev])
-    setPage('seances')
+    
+    try {
+      // Créer la séance via l'API
+      const newSeance = await api.createSeance({
+        prof_id: prof.id,
+        eleve_id: eleve.id,
+        matiere: prof.matières[0],
+        niveau: prof.niveaux[0],
+        date,
+        heure: `${heure}–${end}`,
+        duree,
+        montant,
+        statut: 'en_attente'
+      })
+      
+      // Mettre à jour l'état local
+      setSeances(prev => [newSeance, ...prev])
+      setPage('seances')
+    } catch (error) {
+      console.error('Erreur lors de la création de la séance:', error)
+      // Fallback: mettre à jour l'état local uniquement
+      setSeances(prev => [{
+        id: Date.now(),
+        profId: prof.id,
+        prof: `${prof.prenom} ${prof.nom}`,
+        matière: prof.matières[0],
+        niveau: prof.niveaux[0],
+        date,
+        heure: `${heure}–${end}`,
+        statut: 'en_attente',
+        eleve: eleve.nom,
+        montant,
+      }, ...prev])
+      setPage('seances')
+    }
   }
 
   function addHours(time, h) {
