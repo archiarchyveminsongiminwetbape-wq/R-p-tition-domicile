@@ -26,11 +26,10 @@ function Spinner() {
  * - Si rôle requis ne correspond pas → redirige vers /app
  */
 export default function ProtectedRoute({ children, requiredRole }) {
-  const token = localStorage.getItem('token')
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const role = user.role || useRole()
 
-  if (!token) return <Navigate to="/connexion" replace />
+  if (!user.email) return <Navigate to="/connexion" replace />
   if (!role) return <Navigate to="/choisir-role" replace />
   if (requiredRole && role !== requiredRole) return <Navigate to="/app" replace />
 

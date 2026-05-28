@@ -29,11 +29,8 @@ export default function Login() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || data.message || 'Identifiants incorrects.')
 
-      // Stocker le token et les infos utilisateur
-      if (data.token) {
-        localStorage.setItem('token', data.token)
-        localStorage.setItem('user', JSON.stringify(data.user))
-      }
+      // Stocker uniquement les infos utilisateur (sans token)
+      localStorage.setItem('user', JSON.stringify(data.user))
 
       // Redirection vers l'application
       nav('/app')

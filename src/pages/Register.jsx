@@ -46,7 +46,7 @@ export default function Register() {
     setLoading(true)
     try {
       // Utiliser le backend local pour l'inscription
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
       const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -61,14 +61,11 @@ export default function Register() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || data.message || "Erreur lors de l'inscription.")
 
-      // Stocker le token et les infos utilisateur
-      if (data.token) {
-        localStorage.setItem('token', data.token)
-        localStorage.setItem('user', JSON.stringify(data.user))
-      }
+      // Stocker uniquement les infos utilisateur (sans token)
+      localStorage.setItem('user', JSON.stringify(data.user))
 
-      // Redirection vers l'application
-      nav('/app')
+      // Redirection vers la sélection de rôle
+      nav('/choisir-role')
     } catch (err) {
       setError(err.message)
       setLoading(false)

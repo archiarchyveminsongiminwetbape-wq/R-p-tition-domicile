@@ -1,27 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const {
-  syncAuth0User,
-  registerLocal,
-  loginLocal,
+  registerSimple,
+  loginSimple,
   updateUserRole,
-  getUserProfile,
-  authenticateToken
+  getUserProfile
 } = require('../controllers/authController');
 
-// Route pour synchroniser un utilisateur Auth0
-router.post('/sync', syncAuth0User);
+// Inscription simple - enregistrement direct dans PostgreSQL
+router.post('/register', registerSimple);
 
-// Inscription locale (sans Auth0)
-router.post('/register', registerLocal);
+// Connexion simple - vérification directe dans PostgreSQL
+router.post('/login', loginSimple);
 
-// Connexion locale (sans Auth0)
-router.post('/login', loginLocal);
+// Mettre à jour le rôle
+router.put('/role', updateUserRole);
 
-// Mettre à jour le rôle (nécessite authentification)
-router.put('/role', authenticateToken, updateUserRole);
-
-// Obtenir le profil utilisateur (nécessite authentification)
-router.get('/profile', authenticateToken, getUserProfile);
+// Obtenir le profil utilisateur
+router.get('/profile', getUserProfile);
 
 module.exports = router;

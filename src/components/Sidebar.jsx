@@ -29,7 +29,6 @@ export default function Sidebar({ page, setPage }) {
 
   const navItems = role === 'professeur' ? NAV_PROF : NAV_PARENT
   const logout = () => {
-    localStorage.removeItem('token')
     localStorage.removeItem('user')
     nav('/connexion')
   }

@@ -19,7 +19,25 @@ export default function RoleSelection() {
     setLoading(true)
     setError('')
     try {
-      setUserRole(sel)
+      // Mettre à jour le rôle via l'API
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+      
+      const res = await fetch(`${API_URL}/auth/role`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          role: sel
+        }),
+      })
+      
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de la mise à jour du rôle')
+      
+      // Mettre à jour le localStorage
+      localStorage.setItem('user', JSON.stringify(data.user))
+      
       nav('/app')
     } catch (err) {
       console.error(err)
@@ -30,7 +48,6 @@ export default function RoleSelection() {
   }
 
   const logout = () => {
-    localStorage.removeItem('token')
     localStorage.removeItem('user')
     nav('/connexion')
   }
