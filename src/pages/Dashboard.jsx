@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react'
 import Avatar from '../components/Avatar'
 import Badge from '../components/Badge'
 import Stars from '../components/Stars'
 import StatutBadge from '../components/StatutBadge'
 import { getAvatarColor } from '../data/constants'
 import { useResponsive } from '../hooks/useResponsive'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005/api'
 
 function KpiCard({ icon, value, label, delta, bg, accent }) {
   return (
@@ -18,6 +20,25 @@ function KpiCard({ icon, value, label, delta, bg, accent }) {
 
 export default function Dashboard({ role, seances, profs, setPage }) {
   const { isMobile, isTablet } = useResponsive()
+  const [realProfs, setRealProfs] = useState([])
+  const [loadingProfs, setLoadingProfs] = useState(true)
+
+  // Charger les professeurs depuis l'API
+  useEffect(() => {
+    async function loadProfesseurs() {
+      try {
+        const response = await fetch(`${API_URL}/professeurs`)
+        const data = await response.json()
+        setRealProfs(data)
+      } catch (error) {
+        console.error('Erreur lors du chargement des professeurs:', error)
+      } finally {
+        setLoadingProfs(false)
+      }
+    }
+
+    loadProfesseurs()
+  }, [])
   const kpis = role === "professeur"
     ? [
         { icon: "📅", value: "0",        label: "Séances ce mois",   delta: "",     bg: "#EFF6FF", accent: "#1A56DB" },
@@ -100,27 +121,39 @@ export default function Dashboard({ role, seances, profs, setPage }) {
             </button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2,1fr)" : "repeat(3,1fr)", gap: isMobile ? 12 : 16 }}>
-            {profs.filter(p => p.valide).slice(0, 3).map((p, i) => (
-              <div key={p.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: isMobile ? 14 : 18 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: isMobile ? 8 : 10 }}>
-                  <Avatar initials={p.photo} size={isMobile ? 34 : 38} color={getAvatarColor(i)} />
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: isMobile ? 12 : 13 }}>{p.prenom} {p.nom}</div>
-                    <div style={{ fontSize: isMobile ? 10 : 11, color: "#64748B" }}>📍 {p.ville}</div>
+            {loadingProfs ? (
+              <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "40px", color: "#94A3B8" }}>
+                Chargement des professeurs...
+              </div>
+            ) : realProfs.length === 0 ? (
+              <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "40px", color: "#94A3B8" }}>
+                Aucun professeur disponible pour le moment.
+              </div>
+            ) : (
+              realProfs.slice(0, 3).map((p, i) => (
+                <div key={p.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: isMobile ? 14 : 18 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: isMobile ? 8 : 10 }}>
+                    <Avatar initials={p.photo} size={isMobile ? 34 : 38} color={getAvatarColor(i)} />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: isMobile ? 12 : 13 }}>{p.prenom} {p.nom}</div>
+                      <div style={{ fontSize: isMobile ? 10 : 11, color: "#64748B" }}>📍 {p.ville || 'Non spécifié'}</div>
+                    </div>
+                  </div>
+                  {p.note > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: isMobile ? 6 : 8 }}>
+                      <Stars n={p.note} />{" "}
+                      <span style={{ fontSize: isMobile ? 10 : 11, color: "#64748B" }}>({p.avis} avis)</span>
+                    </div>
+                  )}
+                  <div style={{ marginTop: isMobile ? 6 : 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
+                    {(p.matières || []).slice(0, 2).map(m => <Badge key={m} text={m} />)}
+                  </div>
+                  <div style={{ marginTop: isMobile ? 8 : 10, fontWeight: 700, color: "#059669", fontSize: isMobile ? 13 : 14 }}>
+                    {p.tarif ? p.tarif.toLocaleString("fr-FR") : 'Non spécifié'} FCFA/h
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", marginBottom: isMobile ? 6 : 8 }}>
-                  <Stars n={p.note} />{" "}
-                  <span style={{ fontSize: isMobile ? 10 : 11, color: "#64748B" }}>({p.avis} avis)</span>
-                </div>
-                <div style={{ marginTop: isMobile ? 6 : 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
-                  {p.matières.slice(0, 2).map(m => <Badge key={m} text={m} />)}
-                </div>
-                <div style={{ marginTop: isMobile ? 8 : 10, fontWeight: 700, color: "#059669", fontSize: isMobile ? 13 : 14 }}>
-                  {p.tarif.toLocaleString("fr-FR")} FCFA/h
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </>
       )}

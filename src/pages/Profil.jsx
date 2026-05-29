@@ -181,10 +181,12 @@ export default function Profil({ role }) {
           )}
           <button onClick={saveProfile} disabled={loading} style={{
             background: loading ? "#94A3B8" : "#1A56DB", color: "#fff", border: "none",
-            padding: "10px 24px", borderRadius: 9, cursor: loading ? "not-allowed" : "pointer",
-            fontWeight: 700, fontSize: 14, marginTop: 4,
+            padding: "12px 28px", borderRadius: 10, cursor: loading ? "not-allowed" : "pointer",
+            fontWeight: 700, fontSize: 14, marginTop: 8,
+            boxShadow: loading ? "none" : "0 4px 6px rgba(26,86,219,0.2)",
+            transition: "all 0.2s"
           }}>
-            {loading ? "Sauvegarde..." : saved ? "✓ Modifications enregistrées" : "Enregistrer les modifications"}
+            {loading ? "⏳ Sauvegarde en cours..." : saved ? "✓ Modifications enregistrées !" : "💾 Enregistrer les modifications"}
           </button>
         </div>
       )}
@@ -217,9 +219,12 @@ export default function Profil({ role }) {
           </div>
           <button onClick={saveProfile} disabled={loading} style={{
             background: loading ? "#94A3B8" : "#1A56DB", color: "#fff", border: "none",
-            padding: "10px 24px", borderRadius: 9, cursor: loading ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 14,
+            padding: "12px 28px", borderRadius: 10, cursor: loading ? "not-allowed" : "pointer",
+            fontWeight: 700, fontSize: 14, marginTop: 8,
+            boxShadow: loading ? "none" : "0 4px 6px rgba(26,86,219,0.2)",
+            transition: "all 0.2s"
           }}>
-            {loading ? "Sauvegarde..." : saved ? "✓ Enregistré" : "Enregistrer"}
+            {loading ? "⏳ Sauvegarde en cours..." : saved ? "✓ Enregistré !" : "💾 Enregistrer"}
           </button>
         </div>
       )}
