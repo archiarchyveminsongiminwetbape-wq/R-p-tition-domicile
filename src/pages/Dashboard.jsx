@@ -20,16 +20,16 @@ export default function Dashboard({ role, seances, profs, setPage }) {
   const { isMobile, isTablet } = useResponsive()
   const kpis = role === "professeur"
     ? [
-        { icon: "📅", value: "7",        label: "Séances ce mois",   delta: "+2",     bg: "#EFF6FF", accent: "#1A56DB" },
-        { icon: "💰", value: "49 500",    label: "Revenus (FCFA)",    delta: "+8 500", bg: "#F0FDF4", accent: "#059669" },
-        { icon: "⭐", value: "4.8 ★",    label: "Note moyenne",       delta: "+0.1",   bg: "#FEF3C7", accent: "#D97706" },
-        { icon: "📋", value: "3",         label: "Annonces actives",   delta: "",       bg: "#F5F3FF", accent: "#7C3AED" },
+        { icon: "📅", value: "0",        label: "Séances ce mois",   delta: "",     bg: "#EFF6FF", accent: "#1A56DB" },
+        { icon: "💰", value: "0",        label: "Revenus (FCFA)",    delta: "",     bg: "#F0FDF4", accent: "#059669" },
+        { icon: "⭐", value: "0.0 ★",    label: "Note moyenne",       delta: "",     bg: "#FEF3C7", accent: "#D97706" },
+        { icon: "📋", value: "0",        label: "Annonces actives",   delta: "",     bg: "#F5F3FF", accent: "#7C3AED" },
       ]
     : [
         { icon: "📅", value: seances.length,                                   label: "Séances réservées", delta: "",  bg: "#EFF6FF", accent: "#1A56DB" },
         { icon: "💳", value: seances.reduce((a,s)=>a+s.montant,0).toLocaleString("fr-FR"), label: "Dépenses (FCFA)",  delta: "", bg: "#FDF2F8", accent: "#DB2777" },
-        { icon: "🎒", value: "2",                                               label: "Élèves inscrits",   delta: "",  bg: "#F0FDF4", accent: "#059669" },
-        { icon: "❤️", value: "2",                                               label: "Profs favoris",     delta: "",  bg: "#FEF3C7", accent: "#D97706" },
+        { icon: "🎒", value: "0",                                              label: "Élèves inscrits",   delta: "",  bg: "#F0FDF4", accent: "#059669" },
+        { icon: "❤️", value: "0",                                              label: "Profs favoris",     delta: "",  bg: "#FEF3C7", accent: "#D97706" },
       ]
 
   const upcoming = seances.filter(s => s.statut !== "realisee").slice(0, 3)
