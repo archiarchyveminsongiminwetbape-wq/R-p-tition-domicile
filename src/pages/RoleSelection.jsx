@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { setUserRole } from '../hooks/useRole'
+import authService from '../services/auth'
 
 const ROLES = [
   { id:'parent',     icon:'👨‍👩‍👧', title:'Je suis un parent',    desc:'Je recherche des professeurs pour mes enfants.',   color:'#059669', bg:'#F0FDF4', border:'#BBF7D0' },
@@ -8,7 +9,7 @@ const ROLES = [
 ]
 
 export default function RoleSelection() {
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = authService.getUserFromToken() || {}
   const nav     = useNavigate()
   const [sel,   setSel]   = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,12 +21,12 @@ export default function RoleSelection() {
     setError('')
     try {
       // Mettre à jour le rôle via l'API
-      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      const user = authService.getUserFromToken()
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
       
       const res = await fetch(`${API_URL}/auth/role`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authService.getAuthHeaders(),
         body: JSON.stringify({
           userId: user.id,
           role: sel
@@ -35,7 +36,7 @@ export default function RoleSelection() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur lors de la mise à jour du rôle')
       
-      // Mettre à jour le localStorage
+      // Mettre à jour le localStorage user pour compatibilité
       localStorage.setItem('user', JSON.stringify(data.user))
       
       nav('/app')
@@ -48,7 +49,7 @@ export default function RoleSelection() {
   }
 
   const logout = () => {
-    localStorage.removeItem('user')
+    authService.logout()
     nav('/connexion')
   }
 
@@ -73,7 +74,7 @@ export default function RoleSelection() {
                 background: sel === r.id ? r.bg : '#fff',
                 borderRadius:14, cursor:'pointer',
                 display:'flex', alignItems:'center', gap:16, textAlign:'left',
-                transition:'all .15s', fontFamily:"'DM Sans",sans-serif",
+                transition:'all .15s', fontFamily:'DM Sans, sans-serif',
                 boxShadow: sel === r.id ? `0 4px 12px ${r.color}22` : 'none',
               }}>
               <span style={{ fontSize:32 }}>{r.icon}</span>
@@ -104,7 +105,7 @@ export default function RoleSelection() {
           background: (!sel || loading) ? '#94A3B8' : '#1A56DB',
           color:'#fff',border:'none',borderRadius:10,fontWeight:700,
           fontSize:15,cursor: (!sel || loading) ? 'not-allowed' : 'pointer',
-          fontFamily:"'DM Sans",sans-serif",
+          fontFamily:'DM Sans, sans-serif',
         }}>
           {loading ? 'Enregistrement…' : 'Confirmer et accéder à mon espace →'}
         </button>

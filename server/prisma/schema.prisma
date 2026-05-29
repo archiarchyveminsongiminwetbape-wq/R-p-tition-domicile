@@ -10,85 +10,185 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
+// Domaine: Utilisateurs
+model Utilisateur {
+  id        Int      @id @default(autoincrement())
   email     String   @unique
-  nom       String
-  prenom    String
   password  String
-  role      String   @default("parent")
+  role      String   @default("parent") // "professeur", "parent", "admin"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  eleves    Eleve[]
+  professeur Professeur?
+  parent     Parent?
 }
 
 model Professeur {
-  id        String   @id @default(uuid())
-  nom       String
-  prenom    String
-  email     String   @unique
-  password  String?
-  tarif     Float
-  note      Float    @default(0)
-  avis      Int      @default(0)
-  ville     String
-  photo     String?
-  matieres  String[]
-  niveaux   String[]
-  bio       String?
-  dispo     String?
-  valide    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              Int       @id @default(autoincrement())
+  utilisateurId   Int       @unique
+  nom             String
+  prenom          String
+  email           String    @unique
+  telephone       String?
+  tarif_horaire   Float
+  bio             String?
+  disponibilites  String?
+  note_moyenne    Float     @default(0)
+  photo           String?
+  valide          Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  annonces  Annonce[]
-  seances   Seance[]
+  utilisateur     Utilisateur @relation(fields: [utilisateurId], references: [id])
+  matieres        Enseigne[]
+  annonces        Annonce[]
+  seances         Seance[]
+  avisRecus       Avis[]     @relation("ProfesseurAvis")
+}
+
+model Parent {
+  id            Int      @id @default(autoincrement())
+  utilisateurId Int      @unique
+  nom           String
+  prenom        String
+  email         String   @unique
+  telephone     String?
+  adresse       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
+  eleves        Eleve[]
+  reservations  Seance[]
+  avisDonnes    Avis[]     @relation("ParentAvis")
 }
 
 model Eleve {
-  id        String   @id @default(uuid())
-  nom       String
-  prenom    String
-  niveau    String
-  ecole     String?
-  parentId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  nom             String
+  prenom          String
+  date_naissance  DateTime?
+  ecole           String?
+  niveauId        Int
+  parentId        Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  parent    User     @relation(fields: [parentId], references: [id])
-  seances   Seance[]
+  parent          Parent   @relation(fields: [parentId], references: [id])
+  niveau          Niveau   @relation(fields: [niveauId], references: [id])
+  seances         Seance[]
 }
 
+// Domaine: Référentiel
+model Matiere {
+  id          Int       @id @default(autoincrement())
+  nom         String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  professeurs Enseigne[]
+  annonces    Annonce[]
+}
+
+model Niveau {
+  id          Int       @id @default(autoincrement())
+  nom         String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  eleves      Eleve[]
+  annonces    AnnonceNiveau[]
+}
+
+// Domaine: Offres
 model Annonce {
-  id        String   @id @default(uuid())
-  profId    String
-  titre     String
-  matiere   String
-  niveaux   String[]
-  tarif     Float
-  statut    String   @default("active")
-  date      DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int       @id @default(autoincrement())
+  professeurId Int
+  titre       String
+  description String
+  tarif       Float
+  statut      String    @default("active") // "active", "suspendue", "supprimee"
+  date_creation DateTime @default(now())
+  matiereId   Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  professeur Professeur @relation(fields: [profId], references: [id])
+  professeur  Professeur @relation(fields: [professeurId], references: [id])
+  matiere     Matiere    @relation(fields: [matiereId], references: [id])
+  niveaux     AnnonceNiveau[]
 }
 
-model Seance {
-  id        String   @id @default(uuid())
-  profId    String
-  eleveId   String
-  matiere   String
-  niveau    String
-  date      DateTime
-  heure     String
-  duree     Int
-  montant   Float
-  statut    String   @default("en_attente")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Enseigne {
+  id           Int      @id @default(autoincrement())
+  professeurId Int
+  matiereId    Int
+  createdAt    DateTime @default(now())
 
-  professeur Professeur @relation(fields: [profId], references: [id])
-  eleve     Eleve     @relation(fields: [eleveId], references: [id])
+  professeur   Professeur @relation(fields: [professeurId], references: [id])
+  matiere      Matiere    @relation(fields: [matiereId], references: [id])
+
+  @@unique([professeurId, matiereId])
+}
+
+model AnnonceNiveau {
+  id        Int      @id @default(autoincrement())
+  annonceId Int
+  niveauId  Int
+  createdAt DateTime @default(now())
+
+  annonce   Annonce  @relation(fields: [annonceId], references: [id])
+  niveau    Niveau   @relation(fields: [niveauId], references: [id])
+
+  @@unique([annonceId, niveauId])
+}
+
+// Domaine: Transactions
+model Seance {
+  id          Int      @id @default(autoincrement())
+  professeurId Int
+  eleveId     Int
+  date_seance DateTime
+  heure_debut String
+  heure_fin   String
+  statut      String   @default("en_attente") // "en_attente", "confirmee", "realisee", "annulee"
+  adresse     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  professeur  Professeur @relation(fields: [professeurId], references: [id])
+  eleve       Eleve     @relation(fields: [eleveId], references: [id])
+  paiement    Paiement?
+  parent      Parent    @relation(fields: [parentId], references: [id])
+  parentId    Int
+}
+
+model Paiement {
+  id           Int      @id @default(autoincrement())
+  seanceId     Int      @unique
+  montant      Float
+  date_paiement DateTime @default(now())
+  statut       String   @default("en_attente") // "en_attente", "effectue", "echoue"
+  mode_paiement String? // "orange_money", "mtn_momo", "wave", "carte", "especes"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  seance       Seance   @relation(fields: [seanceId], references: [id])
+}
+
+model Avis {
+  id           Int      @id @default(autoincrement())
+  professeurId Int
+  parentId     Int
+  note         Int
+  commentaire  String?
+  date_avis    DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  professeur   Professeur @relation("ProfesseurAvis", fields: [professeurId], references: [id])
+  parent       Parent     @relation("ParentAvis", fields: [parentId], references: [id])
+
+  @@unique([professeurId, parentId])
 }

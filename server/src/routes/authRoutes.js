@@ -6,17 +6,18 @@ const {
   updateUserRole,
   getUserProfile
 } = require('../controllers/authController');
+const { authMiddleware } = require('../middleware/auth');
 
-// Inscription simple - enregistrement direct dans PostgreSQL
+// Inscription avec JWT
 router.post('/register', registerSimple);
 
-// Connexion simple - vérification directe dans PostgreSQL
+// Connexion avec JWT
 router.post('/login', loginSimple);
 
 // Mettre à jour le rôle
 router.put('/role', updateUserRole);
 
-// Obtenir le profil utilisateur
-router.get('/profile', getUserProfile);
+// Obtenir le profil utilisateur (protégé par JWT)
+router.get('/profile', authMiddleware, getUserProfile);
 
 module.exports = router;

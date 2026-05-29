@@ -1,6 +1,7 @@
 import { useState }      from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useResponsive } from '../hooks/useResponsive'
+import authService from '../services/auth'
 
 function Logo({ onClick }) {
   return (
@@ -45,27 +46,17 @@ export default function Register() {
 
     setLoading(true)
     try {
-      // Utiliser le backend local pour l'inscription
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
-      const res = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          nom,
-          prenom,
-          password,
-          role
-        }),
+      // Utiliser le service d'authentification JWT
+      const data = await authService.register({
+        email,
+        nom,
+        prenom,
+        password,
+        role
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || data.message || "Erreur lors de l'inscription.")
 
-      // Stocker uniquement les infos utilisateur (sans token)
-      localStorage.setItem('user', JSON.stringify(data.user))
-
-      // Redirection vers la sélection de rôle
-      nav('/choisir-role')
+      // Redirection vers l'application
+      nav('/app')
     } catch (err) {
       setError(err.message)
       setLoading(false)
@@ -150,7 +141,7 @@ export default function Register() {
                       padding: isMobile ? '18px 16px' : '22px 20px', border:`2px solid ${r.border}`,
                       background: r.bg, borderRadius:14, cursor:'pointer',
                       display:'flex', alignItems:'center', gap: isMobile ? 12 : 16, textAlign:'left',
-                      transition:'all .15s', fontFamily:"'DM Sans',sans-serif",
+                      transition:'all .15s', fontFamily:'DM Sans, sans-serif',
                     }}
                     onMouseEnter={e => !isMobile && (e.currentTarget.style.borderColor = r.color)}
                     onMouseLeave={e => !isMobile && (e.currentTarget.style.borderColor = r.border)}>
@@ -220,7 +211,7 @@ export default function Register() {
                   width:'100%', padding:'13px 0', background: loading ? '#94A3B8' : '#1A56DB',
                   color:'#fff', border:'none', borderRadius:10, fontWeight:700,
                   fontSize:15, cursor: loading ? 'not-allowed' : 'pointer',
-                  fontFamily:"'DM Sans',sans-serif", marginTop:4,
+                  fontFamily:'DM Sans, sans-serif', marginTop:4,
                 }}>
                   {loading ? 'Création du compte…' : 'Créer mon compte'}
                 </button>

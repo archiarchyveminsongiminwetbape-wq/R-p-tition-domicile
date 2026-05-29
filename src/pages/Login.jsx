@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResponsive } from '../hooks/useResponsive'
+import authService from '../services/auth'
 
 export default function Login() {
   const nav = useNavigate()
@@ -16,21 +17,8 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      // Utiliser le backend local pour la connexion
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || data.message || 'Identifiants incorrects.')
-
-      // Stocker uniquement les infos utilisateur (sans token)
-      localStorage.setItem('user', JSON.stringify(data.user))
+      // Utiliser le service d'authentification JWT
+      await authService.login(email, password)
 
       // Redirection vers l'application
       nav('/app')

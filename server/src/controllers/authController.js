@@ -1,28 +1,37 @@
-const User = require('../models/User');
+const Utilisateur = require('../models/User');
+const { generateToken, generateRefreshToken } = require('../middleware/auth');
 
-// Inscription simple - enregistrement direct dans PostgreSQL
+// Inscription avec JWT
 const registerSimple = async (req, res) => {
   try {
-    const { email, nom, prenom, password, role } = req.body;
+    const { email, nom, prenom, password, role, telephone, adresse } = req.body;
 
     if (!email || !nom || !prenom || !password) {
       return res.status(400).json({ error: 'Données incomplètes' });
     }
 
-    const user = await User.createLocalUser({
+    const utilisateur = await Utilisateur.createLocalUser({
       email,
       nom,
       prenom,
       password,
-      role: role || 'parent'
+      role: role || 'parent',
+      telephone,
+      adresse
     });
 
-    // Retourner l'utilisateur sans le mot de passe
-    const { password: _, ...userWithoutPassword } = user;
+    // Générer les tokens JWT
+    const token = generateToken(utilisateur);
+    const refreshToken = generateRefreshToken(utilisateur);
+
+    // Retourner l'utilisateur sans le mot de passe avec les tokens
+    const { password: _, ...utilisateurWithoutPassword } = utilisateur;
 
     res.status(201).json({
       success: true,
-      user: userWithoutPassword
+      user: utilisateurWithoutPassword,
+      token,
+      refreshToken
     });
   } catch (error) {
     console.error('Erreur d\'inscription:', error);
@@ -30,7 +39,7 @@ const registerSimple = async (req, res) => {
   }
 };
 
-// Connexion simple - vérification directe dans PostgreSQL
+// Connexion avec JWT
 const loginSimple = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -39,14 +48,20 @@ const loginSimple = async (req, res) => {
       return res.status(400).json({ error: 'Email et mot de passe requis' });
     }
 
-    const user = await User.verifyCredentials(email, password);
+    const utilisateur = await Utilisateur.verifyCredentials(email, password);
 
-    // Retourner l'utilisateur sans le mot de passe
-    const { password: _, ...userWithoutPassword } = user;
+    // Générer les tokens JWT
+    const token = generateToken(utilisateur);
+    const refreshToken = generateRefreshToken(utilisateur);
+
+    // Retourner l'utilisateur sans le mot de passe avec les tokens
+    const { password: _, ...utilisateurWithoutPassword } = utilisateur;
 
     res.json({
       success: true,
-      user: userWithoutPassword
+      user: utilisateurWithoutPassword,
+      token,
+      refreshToken
     });
   } catch (error) {
     console.error('Erreur de connexion:', error);
@@ -59,18 +74,18 @@ const updateUserRole = async (req, res) => {
   try {
     const { userId, role } = req.body;
 
-    if (!userId || !role || !['parent', 'professeur'].includes(role)) {
+    if (!userId || !role || !['parent', 'professeur', 'admin'].includes(role)) {
       return res.status(400).json({ error: 'Données invalides' });
     }
 
-    const user = await User.updateRole(userId, role);
+    const utilisateur = await Utilisateur.updateRole(parseInt(userId), role);
 
     // Retourner l'utilisateur sans le mot de passe
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _, ...utilisateurWithoutPassword } = utilisateur;
 
     res.json({
       success: true,
-      user: userWithoutPassword
+      user: utilisateurWithoutPassword
     });
   } catch (error) {
     console.error('Erreur de mise à jour du rôle:', error);
@@ -78,22 +93,21 @@ const updateUserRole = async (req, res) => {
   }
 };
 
-// Obtenir le profil utilisateur
+// Obtenir le profil utilisateur (avec authentification JWT)
 const getUserProfile = async (req, res) => {
   try {
-    const { userId } = req.query;
-    const user = await User.getByEmail(userId);
+    const utilisateur = await Utilisateur.getById(req.user.id);
 
-    if (!user) {
+    if (!utilisateur) {
       return res.status(404).json({ error: 'Utilisateur non trouvé' });
     }
 
     // Retourner l'utilisateur sans le mot de passe
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _, ...utilisateurWithoutPassword } = utilisateur;
 
     res.json({
       success: true,
-      user: userWithoutPassword
+      user: utilisateurWithoutPassword
     });
   } catch (error) {
     console.error('Erreur de récupération du profil:', error);

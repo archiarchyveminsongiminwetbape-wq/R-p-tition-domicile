@@ -1,16 +1,25 @@
 const prisma = require('../config/database');
 
-class User {
+class Utilisateur {
   // Récupérer un utilisateur par email
   static async getByEmail(email) {
     try {
-      const user = await prisma.user.findUnique({
+      const utilisateur = await prisma.utilisateur.findUnique({
         where: { email },
         include: {
-          eleves: true
+          professeur: true,
+          parent: {
+            include: {
+              eleves: {
+                include: {
+                  niveau: true
+                }
+              }
+            }
+          }
         }
       });
-      return user;
+      return utilisateur;
     } catch (error) {
       throw new Error('Erreur lors de la récupération de l\'utilisateur: ' + error.message);
     }
@@ -19,13 +28,22 @@ class User {
   // Récupérer un utilisateur par ID
   static async getById(id) {
     try {
-      const user = await prisma.user.findUnique({
+      const utilisateur = await prisma.utilisateur.findUnique({
         where: { id },
         include: {
-          eleves: true
+          professeur: true,
+          parent: {
+            include: {
+              eleves: {
+                include: {
+                  niveau: true
+                }
+              }
+            }
+          }
         }
       });
-      return user;
+      return utilisateur;
     } catch (error) {
       throw new Error('Erreur lors de la récupération de l\'utilisateur: ' + error.message);
     }
@@ -34,10 +52,10 @@ class User {
   // Créer un utilisateur directement dans PostgreSQL
   static async createLocalUser(userData) {
     try {
-      const { email, nom, prenom, password, role } = userData;
+      const { email, nom, prenom, password, role, telephone, adresse } = userData;
       
       // Vérifier si l'email existe déjà
-      const existingUser = await prisma.user.findUnique({
+      const existingUser = await prisma.utilisateur.findUnique({
         where: { email }
       });
 
@@ -49,19 +67,40 @@ class User {
       const bcrypt = require('bcryptjs');
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const user = await prisma.user.create({
+      const utilisateur = await prisma.utilisateur.create({
         data: {
           email,
-          nom,
-          prenom,
           password: hashedPassword,
           role: role || 'parent'
-        },
-        include: {
-          eleves: true
         }
       });
-      return user;
+
+      // Créer le profil spécifique selon le rôle
+      if (role === 'professeur') {
+        await prisma.professeur.create({
+          data: {
+            utilisateurId: utilisateur.id,
+            nom,
+            prenom,
+            email,
+            telephone,
+            tarif_horaire: 0
+          }
+        });
+      } else if (role === 'parent') {
+        await prisma.parent.create({
+          data: {
+            utilisateurId: utilisateur.id,
+            nom,
+            prenom,
+            email,
+            telephone,
+            adresse
+          }
+        });
+      }
+
+      return await this.getById(utilisateur.id);
     } catch (error) {
       throw new Error('Erreur lors de la création de l\'utilisateur: ' + error.message);
     }
@@ -70,22 +109,34 @@ class User {
   // Vérifier les identifiants de connexion
   static async verifyCredentials(email, password) {
     try {
-      const user = await prisma.user.findUnique({
-        where: { email }
+      const utilisateur = await prisma.utilisateur.findUnique({
+        where: { email },
+        include: {
+          professeur: true,
+          parent: {
+            include: {
+              eleves: {
+                include: {
+                  niveau: true
+                }
+              }
+            }
+          }
+        }
       });
 
-      if (!user || !user.password) {
+      if (!utilisateur || !utilisateur.password) {
         throw new Error('Identifiants incorrects');
       }
 
       const bcrypt = require('bcryptjs');
-      const isValidPassword = await bcrypt.compare(password, user.password);
+      const isValidPassword = await bcrypt.compare(password, utilisateur.password);
 
       if (!isValidPassword) {
         throw new Error('Identifiants incorrects');
       }
 
-      return user;
+      return utilisateur;
     } catch (error) {
       throw new Error('Erreur lors de la vérification des identifiants: ' + error.message);
     }
@@ -94,18 +145,27 @@ class User {
   // Mettre à jour le rôle d'un utilisateur
   static async updateRole(userId, role) {
     try {
-      const user = await prisma.user.update({
+      const utilisateur = await prisma.utilisateur.update({
         where: { id: userId },
         data: { role },
         include: {
-          eleves: true
+          professeur: true,
+          parent: {
+            include: {
+              eleves: {
+                include: {
+                  niveau: true
+                }
+              }
+            }
+          }
         }
       });
-      return user;
+      return utilisateur;
     } catch (error) {
       throw new Error('Erreur lors de la mise à jour du rôle: ' + error.message);
     }
   }
 }
 
-module.exports = User;
+module.exports = Utilisateur;

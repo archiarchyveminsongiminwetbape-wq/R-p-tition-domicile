@@ -19,6 +19,7 @@ import { useRole } from './hooks/useRole'
 import { useResponsive } from './hooks/useResponsive'
 import { PROFS_INIT, SEANCES_INIT, ELEVES_INIT } from './data/constants'
 import api from './services/api'
+import authService from './services/auth'
 
 const NAV_PROF = [
   { id: 'dashboard', icon: '⊞', label: 'Tableau de bord' },
@@ -154,9 +155,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Vérifier si l'utilisateur est déjà connecté
-    const token = localStorage.getItem('token')
-    const user = localStorage.getItem('user')
+    // Vérifier si l'utilisateur est déjà connecté avec JWT
+    const isAuthenticated = authService.isAuthenticated()
     setIsLoading(false)
   }, [])
 

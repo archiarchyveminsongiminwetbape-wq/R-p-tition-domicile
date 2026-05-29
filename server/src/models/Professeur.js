@@ -6,22 +6,14 @@ class Professeur {
     try {
       const professeurs = await prisma.professeur.findMany({
         where: { valide: true },
-        orderBy: { note: 'desc' },
-        select: {
-          id: true,
-          nom: true,
-          prenom: true,
-          email: true,
-          tarif: true,
-          note: true,
-          avis: true,
-          ville: true,
-          photo: true,
-          matieres: true,
-          niveaux: true,
-          bio: true,
-          dispo: true,
-          valide: true
+        orderBy: { note_moyenne: 'desc' },
+        include: {
+          matieres: {
+            include: {
+              matiere: true
+            }
+          },
+          utilisateur: true
         }
       });
       return professeurs;
@@ -35,21 +27,24 @@ class Professeur {
     try {
       const professeur = await prisma.professeur.findUnique({
         where: { id },
-        select: {
-          id: true,
-          nom: true,
-          prenom: true,
-          email: true,
-          tarif: true,
-          note: true,
-          avis: true,
-          ville: true,
-          photo: true,
-          matieres: true,
-          niveaux: true,
-          bio: true,
-          dispo: true,
-          valide: true
+        include: {
+          matieres: {
+            include: {
+              matiere: true
+            }
+          },
+          avisRecus: true,
+          annonces: {
+            include: {
+              matiere: true,
+              niveaux: {
+                include: {
+                  niveau: true
+                }
+              }
+            }
+          },
+          utilisateur: true
         }
       });
       return professeur;
@@ -59,31 +54,25 @@ class Professeur {
   }
 
   // Récupérer les professeurs par matière
-  static async getByMatiere(matiere) {
+  static async getByMatiere(matiereId) {
     try {
       const professeurs = await prisma.professeur.findMany({
         where: {
           valide: true,
           matieres: {
-            has: matiere
+            some: {
+              matiereId: parseInt(matiereId)
+            }
           }
         },
-        orderBy: { note: 'desc' },
-        select: {
-          id: true,
-          nom: true,
-          prenom: true,
-          email: true,
-          tarif: true,
-          note: true,
-          avis: true,
-          ville: true,
-          photo: true,
-          matieres: true,
-          niveaux: true,
-          bio: true,
-          dispo: true,
-          valide: true
+        orderBy: { note_moyenne: 'desc' },
+        include: {
+          matieres: {
+            include: {
+              matiere: true
+            }
+          },
+          utilisateur: true
         }
       });
       return professeurs;
@@ -93,31 +82,29 @@ class Professeur {
   }
 
   // Récupérer les professeurs par niveau
-  static async getByNiveau(niveau) {
+  static async getByNiveau(niveauId) {
     try {
       const professeurs = await prisma.professeur.findMany({
         where: {
           valide: true,
-          niveaux: {
-            has: niveau
+          annonces: {
+            some: {
+              niveaux: {
+                some: {
+                  niveauId: parseInt(niveauId)
+                }
+              }
+            }
           }
         },
-        orderBy: { note: 'desc' },
-        select: {
-          id: true,
-          nom: true,
-          prenom: true,
-          email: true,
-          tarif: true,
-          note: true,
-          avis: true,
-          ville: true,
-          photo: true,
-          matieres: true,
-          niveaux: true,
-          bio: true,
-          dispo: true,
-          valide: true
+        orderBy: { note_moyenne: 'desc' },
+        include: {
+          matieres: {
+            include: {
+              matiere: true
+            }
+          },
+          utilisateur: true
         }
       });
       return professeurs;
@@ -126,65 +113,87 @@ class Professeur {
     }
   }
 
-  // Créer un nouveau professeur
-  static async create(professeurData) {
-    try {
-      const { nom, prenom, email, tarif, ville, matieres, niveaux, bio, dispo } = professeurData;
-      const professeur = await prisma.professeur.create({
-        data: {
-          nom,
-          prenom,
-          email,
-          tarif: parseFloat(tarif),
-          ville,
-          matieres,
-          niveaux,
-          bio,
-          dispo,
-          note: 0,
-          avis: 0,
-          valide: false
-        }
-      });
-      return professeur;
-    } catch (error) {
-      throw new Error('Erreur lors de la création du professeur: ' + error.message);
-    }
-  }
-
   // Mettre à jour un professeur
   static async update(id, professeurData) {
     try {
-      const { nom, prenom, email, tarif, ville, matieres, niveaux, bio, dispo } = professeurData;
+      const { nom, prenom, email, telephone, tarif_horaire, bio, disponibilites, photo, matieres } = professeurData;
       const professeur = await prisma.professeur.update({
         where: { id },
         data: {
           nom,
           prenom,
           email,
-          tarif: tarif ? parseFloat(tarif) : undefined,
-          ville,
-          matieres,
-          niveaux,
+          telephone,
+          tarif_horaire: tarif_horaire ? parseFloat(tarif_horaire) : undefined,
           bio,
-          dispo
+          disponibilites,
+          photo
         }
       });
-      return professeur;
+
+      // Mise à jour des matières si fournies
+      if (matieres && Array.isArray(matieres)) {
+        // Supprimer les anciennes relations
+        await prisma.enseigne.deleteMany({
+          where: { professeurId: id }
+        });
+
+        // Créer les nouvelles relations
+        for (const matiereId of matieres) {
+          await prisma.enseigne.create({
+            data: {
+              professeurId: id,
+              matiereId: parseInt(matiereId)
+            }
+          });
+        }
+      }
+
+      return await this.getById(id);
     } catch (error) {
       throw new Error('Erreur lors de la mise à jour du professeur: ' + error.message);
     }
   }
 
-  // Supprimer un professeur
-  static async delete(id) {
+  // Valider un professeur
+  static async validate(id) {
     try {
-      await prisma.professeur.delete({
-        where: { id }
+      const professeur = await prisma.professeur.update({
+        where: { id },
+        data: { valide: true }
       });
-      return { message: 'Professeur supprimé avec succès' };
+      return professeur;
     } catch (error) {
-      throw new Error('Erreur lors de la suppression du professeur: ' + error.message);
+      throw new Error('Erreur lors de la validation du professeur: ' + error.message);
+    }
+  }
+
+  // Calculer la note moyenne d'un professeur
+  static async recalculateNote(professeurId) {
+    try {
+      const avis = await prisma.avis.findMany({
+        where: { professeurId }
+      });
+
+      if (avis.length === 0) {
+        await prisma.professeur.update({
+          where: { id: professeurId },
+          data: { note_moyenne: 0 }
+        });
+        return 0;
+      }
+
+      const total = avis.reduce((sum, avis) => sum + avis.note, 0);
+      const moyenne = total / avis.length;
+
+      await prisma.professeur.update({
+        where: { id: professeurId },
+        data: { note_moyenne: moyenne }
+      });
+
+      return moyenne;
+    } catch (error) {
+      throw new Error('Erreur lors du calcul de la note moyenne: ' + error.message);
     }
   }
 }

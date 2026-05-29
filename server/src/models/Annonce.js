@@ -1,34 +1,33 @@
 const prisma = require('../config/database');
 
 class Annonce {
-  // Récupérer toutes les annonces
+  // Récupérer toutes les annonces actives
   static async getAll() {
     try {
       const annonces = await prisma.annonce.findMany({
+        where: { statut: 'active' },
         include: {
           professeur: {
-            select: {
-              nom: true,
-              prenom: true
+            include: {
+              utilisateur: true
             }
           },
-          _count: {
-            select: {
-              professeur: {
-                select: {
-                  seances: true
-                }
-              }
+          matiere: true,
+          niveaux: {
+            include: {
+              niveau: true
             }
           }
         },
-        orderBy: { date: 'desc' }
+        orderBy: { date_creation: 'desc' }
       });
       
       return annonces.map(annonce => ({
         ...annonce,
         prof_nom: `${annonce.professeur.prenom} ${annonce.professeur.nom}`,
-        nombre_seances: annonce._count.professeur.seances.length
+        prof_tarif: annonce.professeur.tarif_horaire,
+        prof_note: annonce.professeur.note_moyenne,
+        niveaux_list: annonce.niveaux.map(n => n.niveau.nom)
       }));
     } catch (error) {
       throw new Error('Erreur lors de la récupération des annonces: ' + error.message);
@@ -36,23 +35,24 @@ class Annonce {
   }
 
   // Récupérer les annonces d'un professeur
-  static async getByProfesseurId(profId) {
+  static async getByProfesseurId(professeurId) {
     try {
       const annonces = await prisma.annonce.findMany({
-        where: { profId },
+        where: { professeurId: parseInt(professeurId) },
         include: {
-          professeur: {
+          matiere: true,
+          niveaux: {
             include: {
-              seances: true
+              niveau: true
             }
           }
         },
-        orderBy: { date: 'desc' }
+        orderBy: { date_creation: 'desc' }
       });
       
       return annonces.map(annonce => ({
         ...annonce,
-        nombre_seances: annonce.professeur.seances.length
+        niveaux_list: annonce.niveaux.map(n => n.niveau.nom)
       }));
     } catch (error) {
       throw new Error('Erreur lors de la récupération des annonces du professeur: ' + error.message);
@@ -66,12 +66,20 @@ class Annonce {
         where: { id },
         include: {
           professeur: {
-            select: {
-              nom: true,
-              prenom: true,
-              photo: true,
-              tarif: true,
-              seances: true
+            include: {
+              utilisateur: true,
+              matieres: {
+                include: {
+                  matiere: true
+                }
+              },
+              avisRecus: true
+            }
+          },
+          matiere: true,
+          niveaux: {
+            include: {
+              niveau: true
             }
           }
         }
@@ -82,9 +90,15 @@ class Annonce {
       return {
         ...annonce,
         prof_nom: `${annonce.professeur.prenom} ${annonce.professeur.nom}`,
+        prof_email: annonce.professeur.email,
+        prof_telephone: annonce.professeur.telephone,
+        prof_tarif: annonce.professeur.tarif_horaire,
+        prof_note: annonce.professeur.note_moyenne,
+        prof_bio: annonce.professeur.bio,
+        prof_disponibilites: annonce.professeur.disponibilites,
         prof_photo: annonce.professeur.photo,
-        prof_tarif: annonce.professeur.tarif,
-        nombre_seances: annonce.professeur.seances.length
+        prof_matieres: annonce.professeur.matieres.map(m => m.matiere.nom),
+        niveaux_list: annonce.niveaux.map(n => n.niveau.nom)
       };
     } catch (error) {
       throw new Error('Erreur lors de la récupération de l\'annonce: ' + error.message);
@@ -94,19 +108,31 @@ class Annonce {
   // Créer une nouvelle annonce
   static async create(annonceData) {
     try {
-      const { prof_id, titre, matiere, niveaux, tarif, statut } = annonceData;
+      const { professeurId, titre, description, tarif, matiereId, niveaux } = annonceData;
       const annonce = await prisma.annonce.create({
         data: {
-          profId: prof_id,
+          professeurId: parseInt(professeurId),
           titre,
-          matiere,
-          niveaux,
+          description,
           tarif: parseFloat(tarif),
-          statut: statut || 'active',
-          date: new Date()
+          matiereId: parseInt(matiereId),
+          date_creation: new Date()
         }
       });
-      return annonce;
+
+      // Ajouter les niveaux ciblés
+      if (niveaux && Array.isArray(niveaux)) {
+        for (const niveauId of niveaux) {
+          await prisma.annonceNiveau.create({
+            data: {
+              annonceId: annonce.id,
+              niveauId: parseInt(niveauId)
+            }
+          });
+        }
+      }
+
+      return await this.getById(annonce.id);
     } catch (error) {
       throw new Error('Erreur lors de la création de l\'annonce: ' + error.message);
     }
@@ -115,18 +141,37 @@ class Annonce {
   // Mettre à jour une annonce
   static async update(id, annonceData) {
     try {
-      const { titre, matiere, niveaux, tarif, statut } = annonceData;
+      const { titre, description, tarif, matiereId, niveaux, statut } = annonceData;
       const annonce = await prisma.annonce.update({
         where: { id },
         data: {
           titre: titre || undefined,
-          matiere: matiere || undefined,
-          niveaux: niveaux || undefined,
+          description: description || undefined,
           tarif: tarif ? parseFloat(tarif) : undefined,
+          matiereId: matiereId ? parseInt(matiereId) : undefined,
           statut: statut || undefined
         }
       });
-      return annonce;
+
+      // Mise à jour des niveaux si fournis
+      if (niveaux && Array.isArray(niveaux)) {
+        // Supprimer les anciennes relations
+        await prisma.annonceNiveau.deleteMany({
+          where: { annonceId: id }
+        });
+
+        // Créer les nouvelles relations
+        for (const niveauId of niveaux) {
+          await prisma.annonceNiveau.create({
+            data: {
+              annonceId: id,
+              niveauId: parseInt(niveauId)
+            }
+          });
+        }
+      }
+
+      return await this.getById(id);
     } catch (error) {
       throw new Error('Erreur lors de la mise à jour de l\'annonce: ' + error.message);
     }
@@ -154,6 +199,60 @@ class Annonce {
       return annonce;
     } catch (error) {
       throw new Error('Erreur lors de la mise à jour du statut: ' + error.message);
+    }
+  }
+
+  // Filtrer les annonces par matière et niveau
+  static async filter(filters) {
+    try {
+      const { matiereId, niveauId, minTarif, maxTarif } = filters;
+      const where = { statut: 'active' };
+
+      if (matiereId) {
+        where.matiereId = parseInt(matiereId);
+      }
+
+      if (niveauId) {
+        where.niveaux = {
+          some: {
+            niveauId: parseInt(niveauId)
+          }
+        };
+      }
+
+      if (minTarif || maxTarif) {
+        where.tarif = {};
+        if (minTarif) where.tarif.gte = parseFloat(minTarif);
+        if (maxTarif) where.tarif.lte = parseFloat(maxTarif);
+      }
+
+      const annonces = await prisma.annonce.findMany({
+        where,
+        include: {
+          professeur: {
+            include: {
+              utilisateur: true
+            }
+          },
+          matiere: true,
+          niveaux: {
+            include: {
+              niveau: true
+            }
+          }
+        },
+        orderBy: { date_creation: 'desc' }
+      });
+      
+      return annonces.map(annonce => ({
+        ...annonce,
+        prof_nom: `${annonce.professeur.prenom} ${annonce.professeur.nom}`,
+        prof_tarif: annonce.professeur.tarif_horaire,
+        prof_note: annonce.professeur.note_moyenne,
+        niveaux_list: annonce.niveaux.map(n => n.niveau.nom)
+      }));
+    } catch (error) {
+      throw new Error('Erreur lors du filtrage des annonces: ' + error.message);
     }
   }
 }

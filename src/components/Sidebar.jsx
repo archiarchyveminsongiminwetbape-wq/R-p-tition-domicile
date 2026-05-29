@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRole }     from '../hooks/useRole'
 import { useResponsive } from '../hooks/useResponsive'
+import authService from '../services/auth'
 import Avatar          from './Avatar'
 
 const NAV_PROF = [
@@ -21,7 +22,7 @@ const NAV_PARENT = [
 ]
 
 export default function Sidebar({ page, setPage }) {
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = authService.getUserFromToken() || {}
   const role = user.role || useRole()
   const nav  = useNavigate()
   const { isMobile } = useResponsive()
@@ -29,7 +30,7 @@ export default function Sidebar({ page, setPage }) {
 
   const navItems = role === 'professeur' ? NAV_PROF : NAV_PARENT
   const logout = () => {
-    localStorage.removeItem('user')
+    authService.logout()
     nav('/connexion')
   }
 
@@ -74,7 +75,7 @@ export default function Sidebar({ page, setPage }) {
           <nav style={{ padding:'10px 8px', flex:1 }}>
             {navItems.map(item => (
               <button key={item.id} onClick={() => { setPage(item.id); setIsOpen(false); }}
-                style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'12px', border:'none', borderRadius:8, marginBottom:2, textAlign:'left', cursor:'pointer', background:page===item.id?'rgba(26,86,219,.3)':'transparent', color:page===item.id?'#93C5FD':'#94A3B8', fontWeight:page===item.id?600:400, fontSize:14, fontFamily:"'DM Sans',sans-serif" }}>
+                style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'12px', border:'none', borderRadius:8, marginBottom:2, textAlign:'left', cursor:'pointer', background:page===item.id?'rgba(26,86,219,.3)':'transparent', color:page===item.id?'#93C5FD':'#94A3B8', fontWeight:page===item.id?600:400, fontSize:14, fontFamily:'DM Sans, sans-serif' }}>
                 <span style={{ fontSize:16 }}>{item.icon}</span>{item.label}
               </button>
             ))}
@@ -82,7 +83,7 @@ export default function Sidebar({ page, setPage }) {
 
           <div style={{ padding:'8px 8px 2px', borderTop:'1px solid rgba(255,255,255,.06)' }}>
             <button onClick={() => logout()}
-              style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'12px', border:'none', borderRadius:8, cursor:'pointer', background:'transparent', color:'#64748B', fontSize:14, fontFamily:"'DM Sans',sans-serif" }}>
+              style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'12px', border:'none', borderRadius:8, cursor:'pointer', background:'transparent', color:'#64748B', fontSize:14, fontFamily:'DM Sans, sans-serif' }}>
               <span>🚪</span> Se déconnecter
             </button>
           </div>
@@ -121,7 +122,7 @@ export default function Sidebar({ page, setPage }) {
       <nav style={{ padding:'10px 8px', flex:1, overflowY:'auto' }}>
         {navItems.map(item => (
           <button key={item.id} onClick={() => setPage(item.id)}
-            style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'9px 12px', border:'none', borderRadius:8, marginBottom:2, textAlign:'left', cursor:'pointer', background:page===item.id?'rgba(26,86,219,.3)':'transparent', color:page===item.id?'#93C5FD':'#94A3B8', fontWeight:page===item.id?600:400, fontSize:13, fontFamily:"'DM Sans',sans-serif" }}>
+            style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'9px 12px', border:'none', borderRadius:8, marginBottom:2, textAlign:'left', cursor:'pointer', background:page===item.id?'rgba(26,86,219,.3)':'transparent', color:page===item.id?'#93C5FD':'#94A3B8', fontWeight:page===item.id?600:400, fontSize:13, fontFamily:'DM Sans, sans-serif' }}>
             <span style={{ fontSize:15 }}>{item.icon}</span>{item.label}
           </button>
         ))}
@@ -129,7 +130,7 @@ export default function Sidebar({ page, setPage }) {
 
       <div style={{ padding:'8px 8px 2px', borderTop:'1px solid rgba(255,255,255,.06)' }}>
         <button onClick={() => logout()}
-          style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'9px 12px', border:'none', borderRadius:8, cursor:'pointer', background:'transparent', color:'#64748B', fontSize:13, fontFamily:"'DM Sans',sans-serif" }}
+          style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'9px 12px', border:'none', borderRadius:8, cursor:'pointer', background:'transparent', color:'#64748B', fontSize:13, fontFamily:'DM Sans, sans-serif' }}
           onMouseEnter={e => { e.currentTarget.style.background='rgba(239,68,68,.1)'; e.currentTarget.style.color='#FCA5A5' }}
           onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='#64748B' }}>
           <span>🚪</span> Se déconnecter

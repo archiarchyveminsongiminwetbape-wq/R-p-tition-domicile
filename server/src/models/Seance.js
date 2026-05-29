@@ -7,23 +7,33 @@ class Seance {
       const seances = await prisma.seance.findMany({
         include: {
           professeur: {
-            select: {
-              nom: true,
-              prenom: true,
-              matieres: true
+            include: {
+              utilisateur: true
             }
-          }
+          },
+          eleve: {
+            include: {
+              niveau: true
+            }
+          },
+          parent: {
+            include: {
+              utilisateur: true
+            }
+          },
+          paiement: true
         },
         orderBy: [
-          { date: 'desc' },
-          { heure: 'desc' }
+          { date_seance: 'desc' },
+          { heure_debut: 'desc' }
         ]
       });
       
       return seances.map(seance => ({
         ...seance,
         prof_nom: `${seance.professeur.prenom} ${seance.professeur.nom}`,
-        matiere: seance.matiere
+        eleve_nom: `${seance.eleve.prenom} ${seance.eleve.nom}`,
+        eleve_niveau: seance.eleve.niveau.nom
       }));
     } catch (error) {
       throw new Error('Erreur lors de la récupération des séances: ' + error.message);
@@ -31,60 +41,75 @@ class Seance {
   }
 
   // Récupérer les séances d'un professeur
-  static async getByProfesseurId(profId) {
+  static async getByProfesseurId(professeurId) {
     try {
       const seances = await prisma.seance.findMany({
-        where: { profId },
+        where: { professeurId: parseInt(professeurId) },
         include: {
-          professeur: {
-            select: {
-              nom: true,
-              prenom: true
+          eleve: {
+            include: {
+              niveau: true,
+              parent: {
+                include: {
+                  utilisateur: true
+                }
+              }
             }
-          }
+          },
+          parent: {
+            include: {
+              utilisateur: true
+            }
+          },
+          paiement: true
         },
         orderBy: [
-          { date: 'desc' },
-          { heure: 'desc' }
+          { date_seance: 'desc' },
+          { heure_debut: 'desc' }
         ]
       });
       
       return seances.map(seance => ({
         ...seance,
-        prof_nom: `${seance.professeur.prenom} ${seance.professeur.nom}`
+        eleve_nom: `${seance.eleve.prenom} ${seance.eleve.nom}`,
+        eleve_niveau: seance.eleve.niveau.nom,
+        parent_nom: `${seance.parent.prenom} ${seance.parent.nom}`
       }));
     } catch (error) {
       throw new Error('Erreur lors de la récupération des séances du professeur: ' + error.message);
     }
   }
 
-  // Récupérer les séances d'un parent (par élève)
+  // Récupérer les séances d'un parent
   static async getByParentId(parentId) {
     try {
       const seances = await prisma.seance.findMany({
-        where: {
-          eleve: {
-            parentId
-          }
-        },
+        where: { parentId: parseInt(parentId) },
         include: {
           professeur: {
-            select: {
-              nom: true,
-              prenom: true
+            include: {
+              utilisateur: true
             }
           },
-          eleve: true
+          eleve: {
+            include: {
+              niveau: true
+            }
+          },
+          paiement: true
         },
         orderBy: [
-          { date: 'desc' },
-          { heure: 'desc' }
+          { date_seance: 'desc' },
+          { heure_debut: 'desc' }
         ]
       });
       
       return seances.map(seance => ({
         ...seance,
-        prof_nom: `${seance.professeur.prenom} ${seance.professeur.nom}`
+        prof_nom: `${seance.professeur.prenom} ${seance.professeur.nom}`,
+        prof_tarif: seance.professeur.tarif_horaire,
+        eleve_nom: `${seance.eleve.prenom} ${seance.eleve.nom}`,
+        eleve_niveau: seance.eleve.niveau.nom
       }));
     } catch (error) {
       throw new Error('Erreur lors de la récupération des séances du parent: ' + error.message);
@@ -98,12 +123,26 @@ class Seance {
         where: { id },
         include: {
           professeur: {
-            select: {
-              nom: true,
-              prenom: true,
-              matieres: true
+            include: {
+              utilisateur: true
             }
-          }
+          },
+          eleve: {
+            include: {
+              niveau: true,
+              parent: {
+                include: {
+                  utilisateur: true
+                }
+              }
+            }
+          },
+          parent: {
+            include: {
+              utilisateur: true
+            }
+          },
+          paiement: true
         }
       });
       
@@ -112,7 +151,11 @@ class Seance {
       return {
         ...seance,
         prof_nom: `${seance.professeur.prenom} ${seance.professeur.nom}`,
-        matiere: seance.matiere
+        prof_email: seance.professeur.email,
+        prof_telephone: seance.professeur.telephone,
+        eleve_nom: `${seance.eleve.prenom} ${seance.eleve.nom}`,
+        eleve_niveau: seance.eleve.niveau.nom,
+        parent_nom: `${seance.parent.prenom} ${seance.parent.nom}`
       };
     } catch (error) {
       throw new Error('Erreur lors de la récupération de la séance: ' + error.message);
@@ -122,21 +165,59 @@ class Seance {
   // Créer une nouvelle séance
   static async create(seanceData) {
     try {
-      const { prof_id, eleve_id, matiere, niveau, date, heure, duree, montant, statut } = seanceData;
+      const { professeurId, eleveId, parentId, date_seance, heure_debut, heure_fin, adresse, statut } = seanceData;
+      
+      // Récupérer le professeur pour calculer le montant
+      const professeur = await prisma.professeur.findUnique({
+        where: { id: parseInt(professeurId) }
+      });
+
+      if (!professeur) {
+        throw new Error('Professeur non trouvé');
+      }
+
+      // Calculer la durée en heures
+      const debut = new Date(`2000-01-01T${heure_debut}`);
+      const fin = new Date(`2000-01-01T${heure_fin}`);
+      const dureeHeures = (fin - debut) / (1000 * 60 * 60);
+      const montant = dureeHeures * professeur.tarif_horaire;
+
       const seance = await prisma.seance.create({
         data: {
-          profId: prof_id,
-          eleveId: eleve_id,
-          matiere,
-          niveau,
-          date: new Date(date),
-          heure,
-          duree: parseInt(duree),
-          montant: parseFloat(montant),
+          professeurId: parseInt(professeurId),
+          eleveId: parseInt(eleveId),
+          parentId: parseInt(parentId),
+          date_seance: new Date(date_seance),
+          heure_debut,
+          heure_fin,
+          adresse,
           statut: statut || 'en_attente'
+        },
+        include: {
+          professeur: {
+            include: {
+              utilisateur: true
+            }
+          },
+          eleve: {
+            include: {
+              niveau: true
+            }
+          },
+          parent: {
+            include: {
+              utilisateur: true
+            }
+          }
         }
       });
-      return seance;
+
+      return {
+        ...seance,
+        montant_calcule: montant,
+        prof_nom: `${seance.professeur.prenom} ${seance.professeur.nom}`,
+        eleve_nom: `${seance.eleve.prenom} ${seance.eleve.nom}`
+      };
     } catch (error) {
       throw new Error('Erreur lors de la création de la séance: ' + error.message);
     }
@@ -145,13 +226,33 @@ class Seance {
   // Mettre à jour une séance
   static async update(id, seanceData) {
     try {
-      const { statut, date, heure } = seanceData;
+      const { statut, date_seance, heure_debut, heure_fin, adresse } = seanceData;
       const seance = await prisma.seance.update({
         where: { id },
         data: {
           statut: statut || undefined,
-          date: date ? new Date(date) : undefined,
-          heure: heure || undefined
+          date_seance: date_seance ? new Date(date_seance) : undefined,
+          heure_debut: heure_debut || undefined,
+          heure_fin: heure_fin || undefined,
+          adresse: adresse || undefined
+        },
+        include: {
+          professeur: {
+            include: {
+              utilisateur: true
+            }
+          },
+          eleve: {
+            include: {
+              niveau: true
+            }
+          },
+          parent: {
+            include: {
+              utilisateur: true
+            }
+          },
+          paiement: true
         }
       });
       return seance;
@@ -182,6 +283,45 @@ class Seance {
       return seance;
     } catch (error) {
       throw new Error('Erreur lors de la mise à jour du statut: ' + error.message);
+    }
+  }
+
+  // Confirmer une séance
+  static async confirmer(id) {
+    try {
+      const seance = await prisma.seance.update({
+        where: { id },
+        data: { statut: 'confirmee' }
+      });
+      return seance;
+    } catch (error) {
+      throw new Error('Erreur lors de la confirmation de la séance: ' + error.message);
+    }
+  }
+
+  // Annuler une séance
+  static async annuler(id) {
+    try {
+      const seance = await prisma.seance.update({
+        where: { id },
+        data: { statut: 'annulee' }
+      });
+      return seance;
+    } catch (error) {
+      throw new Error('Erreur lors de l\'annulation de la séance: ' + error.message);
+    }
+  }
+
+  // Marquer une séance comme réalisée
+  static async realisee(id) {
+    try {
+      const seance = await prisma.seance.update({
+        where: { id },
+        data: { statut: 'realisee' }
+      });
+      return seance;
+    } catch (error) {
+      throw new Error('Erreur lors du marquage de la séance comme réalisée: ' + error.message);
     }
   }
 }

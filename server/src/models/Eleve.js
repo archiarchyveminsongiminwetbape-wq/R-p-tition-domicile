@@ -7,11 +7,11 @@ class Eleve {
       const eleves = await prisma.eleve.findMany({
         include: {
           parent: {
-            select: {
-              nom: true,
-              prenom: true
+            include: {
+              utilisateur: true
             }
-          }
+          },
+          niveau: true
         },
         orderBy: { nom: 'asc' }
       });
@@ -30,6 +30,9 @@ class Eleve {
     try {
       const eleves = await prisma.eleve.findMany({
         where: { parentId },
+        include: {
+          niveau: true
+        },
         orderBy: { nom: 'asc' }
       });
       return eleves;
@@ -45,11 +48,11 @@ class Eleve {
         where: { id },
         include: {
           parent: {
-            select: {
-              nom: true,
-              prenom: true
+            include: {
+              utilisateur: true
             }
-          }
+          },
+          niveau: true
         }
       });
       
@@ -67,14 +70,18 @@ class Eleve {
   // Créer un nouvel élève
   static async create(eleveData) {
     try {
-      const { parent_id, nom, prenom, niveau, ecole } = eleveData;
+      const { parentId, nom, prenom, niveauId, ecole, date_naissance } = eleveData;
       const eleve = await prisma.eleve.create({
         data: {
-          parentId: parent_id,
+          parentId: parseInt(parentId),
           nom,
           prenom,
-          niveau,
-          ecole
+          niveauId: parseInt(niveauId),
+          ecole,
+          date_naissance: date_naissance ? new Date(date_naissance) : null
+        },
+        include: {
+          niveau: true
         }
       });
       return eleve;
@@ -86,14 +93,18 @@ class Eleve {
   // Mettre à jour un élève
   static async update(id, eleveData) {
     try {
-      const { nom, prenom, niveau, ecole } = eleveData;
+      const { nom, prenom, niveauId, ecole, date_naissance } = eleveData;
       const eleve = await prisma.eleve.update({
         where: { id },
         data: {
           nom,
           prenom,
-          niveau,
-          ecole
+          niveauId: niveauId ? parseInt(niveauId) : undefined,
+          ecole,
+          date_naissance: date_naissance ? new Date(date_naissance) : undefined
+        },
+        include: {
+          niveau: true
         }
       });
       return eleve;

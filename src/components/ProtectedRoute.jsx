@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom'
+import authService from '../services/auth'
 import { useRole } from '../hooks/useRole'
 
 function Spinner() {
@@ -26,10 +27,11 @@ function Spinner() {
  * - Si rôle requis ne correspond pas → redirige vers /app
  */
 export default function ProtectedRoute({ children, requiredRole }) {
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-  const role = user.role || useRole()
+  const isAuthenticated = authService.isAuthenticated()
+  const user = authService.getUserFromToken()
+  const role = user?.role || useRole()
 
-  if (!user.email) return <Navigate to="/connexion" replace />
+  if (!isAuthenticated || !user?.email) return <Navigate to="/connexion" replace />
   if (!role) return <Navigate to="/choisir-role" replace />
   if (requiredRole && role !== requiredRole) return <Navigate to="/app" replace />
 
