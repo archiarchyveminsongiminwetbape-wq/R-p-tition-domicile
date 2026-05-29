@@ -191,7 +191,7 @@ class Utilisateur {
             prenom,
             telephone,
             tarif_horaire: tarif ? parseInt(tarif) : 0,
-            biographie: bio,
+            bio: bio,
             disponibilites: dispo
           }
         });
