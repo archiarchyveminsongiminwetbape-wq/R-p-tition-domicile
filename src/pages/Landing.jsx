@@ -313,7 +313,7 @@ export default function Landing() {
       <section style={{ padding: isMobile ? '80px 16px' : '100px 48px', background: '#0F172A', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <h2 style={{
-            fontSize: isMobile ? 28 : 40, fontWeight: 700, fontFamily: "'Playfair Display",serif",
+            fontSize: isMobile ? 28 : 40, fontWeight: 700, fontFamily: "'Playfair Display', serif",
             color: '#fff', margin: '0 0 20px'
           }}>
             Prêt à commencer ?
@@ -338,7 +338,7 @@ export default function Landing() {
       <footer style={{ padding: isMobile ? '40px 16px' : '48px', background: '#0F172A', borderTop: '1px solid rgba(255,255,255,.08)' }}>
         <div style={{ maxWidth: isMobile ? '100%' : 1100, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ marginBottom: 24 }}>
-            <span style={{ fontFamily: "'Playfair Display",serif", fontWeight: 700, color: '#fff', fontSize: 18 }}>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, color: '#fff', fontSize: 18 }}>
               Répétitions<span style={{ color: '#60A5FA' }}> à Domicile</span>
             </span>
           </div>
