@@ -166,6 +166,82 @@ class Utilisateur {
       throw new Error('Erreur lors de la mise à jour du rôle: ' + error.message);
     }
   }
+
+  // Mettre à jour le profil utilisateur
+  static async updateProfile(userId, profileData) {
+    try {
+      const { nom, prenom, telephone, adresse, ville, tarif, bio, dispo, matieres, niveaux } = profileData;
+      
+      // Mettre à jour l'utilisateur de base
+      const utilisateur = await prisma.utilisateur.update({
+        where: { id: userId },
+        data: { nom, prenom },
+        include: {
+          professeur: true,
+          parent: true
+        }
+      });
+
+      // Mettre à jour selon le rôle
+      if (utilisateur.role === 'professeur' && utilisateur.professeur) {
+        await prisma.professeur.update({
+          where: { utilisateurId: userId },
+          data: {
+            nom,
+            prenom,
+            telephone,
+            tarif_horaire: tarif ? parseInt(tarif) : 0,
+            biographie: bio,
+            disponibilites: dispo
+          }
+        });
+
+        // Mettre à jour les matières enseignées (supprimer anciennes, ajouter nouvelles)
+        if (matieres && Array.isArray(matieres)) {
+          await prisma.enseigne.deleteMany({
+            where: { professeurId: utilisateur.professeur.id }
+          });
+
+          for (const matiereNom of matieres) {
+            const matiere = await prisma.matiere.findFirst({
+              where: { nom: matiereNom }
+            });
+            if (matiere) {
+              await prisma.enseigne.create({
+                data: {
+                  professeurId: utilisateur.professeur.id,
+                  matiereId: matiere.id
+                }
+              });
+            }
+          }
+        }
+
+        // Mettre à jour les niveaux (supprimer anciens, ajouter nouveaux)
+        if (niveaux && Array.isArray(niveaux)) {
+          await prisma.annonceNiveau.deleteMany({
+            where: { annonce: { professeurId: utilisateur.professeur.id } }
+          });
+        }
+      } else if (utilisateur.role === 'parent' && utilisateur.parent) {
+        await prisma.parent.update({
+          where: { utilisateurId: userId },
+          data: {
+            nom,
+            prenom,
+            telephone,
+            adresse,
+            ville
+          }
+        });
+      }
+
+      // Retourner l'utilisateur mis à jour
+      return await this.getById(userId);
+    } catch (error) {
+      throw new Error('Erreur lors de la mise à jour du profil: ' + error.message);
+    }
+  }
 }
 
 module.exports = Utilisateur;

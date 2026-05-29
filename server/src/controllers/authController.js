@@ -115,9 +115,28 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+// Mettre à jour le profil utilisateur (avec authentification JWT)
+const updateUserProfile = async (req, res) => {
+  try {
+    const utilisateur = await Utilisateur.updateProfile(req.user.id, req.body);
+
+    // Retourner l'utilisateur sans le mot de passe
+    const { password: _, ...utilisateurWithoutPassword } = utilisateur;
+
+    res.json({
+      success: true,
+      user: utilisateurWithoutPassword
+    });
+  } catch (error) {
+    console.error('Erreur de mise à jour du profil:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   registerSimple,
   loginSimple,
   updateUserRole,
-  getUserProfile
+  getUserProfile,
+  updateUserProfile
 };

@@ -1,28 +1,90 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Avatar from '../components/Avatar'
 import Badge from '../components/Badge'
 import Stars from '../components/Stars'
 import { MATIERES, NIVEAUX } from '../data/constants'
+import authService from '../services/auth'
 
 export default function Profil({ role }) {
   const defaultProf = {
-    prenom: "Éric", nom: "Kamga", email: "eric@demo.cm",
-    tel: "+237 655 123 456", ville: "Yaoundé", tarif: "3500",
-    bio: "Ingénieur de formation, 8 ans d'expérience en soutien scolaire.",
-    dispo: "Lun–Ven 16h–20h, Sam 8h–14h",
-    matières: ["Mathématiques", "Physique-Chimie"],
-    niveaux: ["Lycée 2nde–1re", "Terminale"],
-    note: 4.8, avisCount: 12,
+    prenom: "", nom: "", email: "",
+    tel: "", ville: "", tarif: "",
+    bio: "",
+    dispo: "",
+    matières: [],
+    niveaux: [],
+    note: 0, avisCount: 0,
   }
   const defaultParent = {
-    prenom: "Marie", nom: "Parent", email: "marie@demo.cm",
-    tel: "+237 699 987 654", adresse: "Bastos, Yaoundé", ville: "Yaoundé",
+    prenom: "", nom: "", email: "",
+    tel: "", adresse: "", ville: "",
   }
 
   const init = role === "professeur" ? defaultProf : defaultParent
   const [fields, setFields] = useState(init)
   const [saved,  setSaved]  = useState(false)
+  const [loading, setLoading] = useState(false)
   const [tab,    setTab]    = useState("infos")
+
+  // Charger les données du profil au montage
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        setLoading(true)
+        const data = await authService.fetchProfile()
+        const user = data.user
+        
+        // Transformer les données de l'API pour le formulaire
+        if (role === 'professeur' && user.professeur) {
+          setFields({
+            prenom: user.professeur.prenom || user.prenom || "",
+            nom: user.professeur.nom || user.nom || "",
+            email: user.email || "",
+            tel: user.professeur.telephone || "",
+            ville: user.professeur.ville || "",
+            tarif: user.professeur.tarif_horaire?.toString() || "",
+            bio: user.professeur.biographie || "",
+            dispo: user.professeur.disponibilites || "",
+            matières: [], // Sera chargé depuis les relations
+            niveaux: [],
+            note: 0, // Sera calculé depuis les avis
+            avisCount: 0,
+          })
+        } else if (role === 'parent' && user.parent) {
+          setFields({
+            prenom: user.parent.prenom || user.prenom || "",
+            nom: user.parent.nom || user.nom || "",
+            email: user.email || "",
+            tel: user.parent.telephone || "",
+            adresse: user.parent.adresse || "",
+            ville: user.parent.ville || "",
+          })
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement du profil:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (authService.isAuthenticated()) {
+      loadProfile()
+    }
+  }, [role])
+
+  async function saveProfile() {
+    try {
+      setLoading(true)
+      await authService.updateProfile(fields)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde du profil:', error)
+      alert('Erreur lors de la sauvegarde: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   function set(key, val) { setFields(f => ({ ...f, [key]: val })); setSaved(false) }
 
@@ -42,7 +104,7 @@ export default function Profil({ role }) {
     setSaved(false)
   }
 
-  const initials = role === "professeur" ? "EK" : "MP"
+  const initials = (fields.prenom?.[0] || "") + (fields.nom?.[0] || "") || (role === "professeur" ? "EK" : "MP")
 
   return (
     <div className="fade-in">
@@ -60,7 +122,7 @@ export default function Profil({ role }) {
             {fields.prenom} {fields.nom}
           </h3>
           <div style={{ fontSize: 13, opacity: .85 }}>{fields.email}</div>
-          {role === "professeur" && (
+          {role === "professeur" && fields.note > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
               <Stars n={fields.note} size={14} />
               <span style={{ fontSize: 12, opacity: .8 }}>{fields.note} ({fields.avisCount} avis)</span>
@@ -117,12 +179,12 @@ export default function Profil({ role }) {
               </div>
             </>
           )}
-          <button onClick={() => setSaved(true)} style={{
-            background: "#1A56DB", color: "#fff", border: "none",
-            padding: "10px 24px", borderRadius: 9, cursor: "pointer",
+          <button onClick={saveProfile} disabled={loading} style={{
+            background: loading ? "#94A3B8" : "#1A56DB", color: "#fff", border: "none",
+            padding: "10px 24px", borderRadius: 9, cursor: loading ? "not-allowed" : "pointer",
             fontWeight: 700, fontSize: 14, marginTop: 4,
           }}>
-            {saved ? "✓ Modifications enregistrées" : "Enregistrer les modifications"}
+            {loading ? "Sauvegarde..." : saved ? "✓ Modifications enregistrées" : "Enregistrer les modifications"}
           </button>
         </div>
       )}
@@ -153,11 +215,11 @@ export default function Profil({ role }) {
               }}>{n}</button>
             ))}
           </div>
-          <button onClick={() => setSaved(true)} style={{
-            background: "#1A56DB", color: "#fff", border: "none",
-            padding: "10px 24px", borderRadius: 9, cursor: "pointer", fontWeight: 700, fontSize: 14,
+          <button onClick={saveProfile} disabled={loading} style={{
+            background: loading ? "#94A3B8" : "#1A56DB", color: "#fff", border: "none",
+            padding: "10px 24px", borderRadius: 9, cursor: loading ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 14,
           }}>
-            {saved ? "✓ Enregistré" : "Enregistrer"}
+            {loading ? "Sauvegarde..." : saved ? "✓ Enregistré" : "Enregistrer"}
           </button>
         </div>
       )}

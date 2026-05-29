@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3008/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005/api';
 
 // Service d'authentification JWT
 class AuthService {
@@ -108,6 +108,49 @@ class AuthService {
     }
 
     return headers;
+  }
+
+  // Mettre à jour le profil utilisateur
+  async updateProfile(profileData) {
+    try {
+      const response = await fetch(`${API_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(profileData),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Erreur lors de la mise à jour du profil');
+
+      // Mettre à jour les informations utilisateur en local
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      return data;
+    } catch (error) {
+      console.error('Erreur de mise à jour du profil:', error);
+      throw error;
+    }
+  }
+
+  // Récupérer le profil utilisateur depuis le serveur
+  async fetchProfile() {
+    try {
+      const response = await fetch(`${API_URL}/auth/profile`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Erreur lors de la récupération du profil');
+
+      // Mettre à jour les informations utilisateur en local
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      return data;
+    } catch (error) {
+      console.error('Erreur de récupération du profil:', error);
+      throw error;
+    }
   }
 
   // Rafraîchir le token (si expiré)

@@ -4,7 +4,8 @@ const {
   registerSimple,
   loginSimple,
   updateUserRole,
-  getUserProfile
+  getUserProfile,
+  updateUserProfile
 } = require('../controllers/authController');
 const { authMiddleware } = require('../middleware/auth');
 
@@ -19,5 +20,8 @@ router.put('/role', updateUserRole);
 
 // Obtenir le profil utilisateur (protégé par JWT)
 router.get('/profile', authMiddleware, getUserProfile);
+
+// Mettre à jour le profil utilisateur (protégé par JWT)
+router.put('/profile', authMiddleware, updateUserProfile);
 
 module.exports = router;
