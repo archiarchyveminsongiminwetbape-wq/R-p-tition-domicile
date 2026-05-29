@@ -6,14 +6,14 @@ exports.getAllProfesseurs = async (req, res) => {
     const professeurs = await prisma.professeur.findMany({
       include: {
         utilisateur: true,
-        enseigne: {
+        matieres: {
           include: {
             matiere: true
           }
         },
-        avis: {
+        avisRecus: {
           where: {
-            statut: 'approuve'
+            // Pas de filtre sur statut pour le moment
           }
         }
       }
@@ -21,10 +21,10 @@ exports.getAllProfesseurs = async (req, res) => {
 
     // Transformer les données pour le frontend
     const professeursTransformed = professeurs.map(prof => {
-      const avis = prof.avis || [];
+      const avis = prof.avisRecus || [];
       const noteMoyenne = avis.length > 0 
         ? avis.reduce((sum, a) => sum + a.note, 0) / avis.length 
-        : 0;
+        : prof.note_moyenne || 0;
 
       return {
         id: prof.id,
@@ -32,15 +32,15 @@ exports.getAllProfesseurs = async (req, res) => {
         prenom: prof.prenom,
         email: prof.email,
         telephone: prof.telephone,
-        ville: prof.ville,
+        ville: prof.ville || 'Non spécifié',
         tarif: prof.tarif_horaire,
-        bio: prof.biographie,
+        bio: prof.bio,
         dispo: prof.disponibilites,
-        matières: prof.enseigne.map(e => e.matiere.nom),
-        niveaux: [], // Sera ajouté avec les annonces
+        matières: prof.matieres.map(e => e.matiere.nom),
+        niveaux: [],
         note: noteMoyenne,
         avis: avis.length,
-        valide: true,
+        valide: prof.valide,
         photo: `${prof.prenom[0]}${prof.nom[0]}`,
         utilisateurId: prof.utilisateurId
       };
@@ -60,16 +60,12 @@ exports.getProfesseurById = async (req, res) => {
       where: { id: parseInt(req.params.id) },
       include: {
         utilisateur: true,
-        enseigne: {
+        matieres: {
           include: {
             matiere: true
           }
         },
-        avis: {
-          where: {
-            statut: 'approuve'
-          }
-        }
+        avisRecus: true
       }
     });
 
@@ -77,10 +73,10 @@ exports.getProfesseurById = async (req, res) => {
       return res.status(404).json({ error: 'Professeur non trouvé' });
     }
 
-    const avis = professeur.avis || [];
+    const avis = professeur.avisRecus || [];
     const noteMoyenne = avis.length > 0 
       ? avis.reduce((sum, a) => sum + a.note, 0) / avis.length 
-      : 0;
+      : professeur.note_moyenne || 0;
 
     const professeurTransformed = {
       id: professeur.id,
@@ -88,15 +84,15 @@ exports.getProfesseurById = async (req, res) => {
       prenom: professeur.prenom,
       email: professeur.email,
       telephone: professeur.telephone,
-      ville: professeur.ville,
+      ville: professeur.ville || 'Non spécifié',
       tarif: professeur.tarif_horaire,
-      bio: professeur.biographie,
+      bio: professeur.bio,
       dispo: professeur.disponibilites,
-      matières: professeur.enseigne.map(e => e.matiere.nom),
+      matières: professeur.matieres.map(e => e.matiere.nom),
       niveaux: [],
       note: noteMoyenne,
       avis: avis.length,
-      valide: true,
+      valide: professeur.valide,
       photo: `${professeur.prenom[0]}${professeur.nom[0]}`,
       utilisateurId: professeur.utilisateurId
     };
